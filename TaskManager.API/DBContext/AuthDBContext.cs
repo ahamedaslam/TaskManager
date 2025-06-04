@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using TaskManager.Models;
 
 namespace TaskManager.DBContext
 {
@@ -10,6 +11,9 @@ namespace TaskManager.DBContext
         {
 
         }
+
+        public DbSet<TaskItem> TaskItems { get; set; }
+
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
