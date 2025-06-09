@@ -3,13 +3,26 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using Serilog;
 using System.Text;
 using TaskManager.DBContext;
 using TaskManager.IRepository;
+using TaskManager.Middleware;
 using TaskManager.Repository;
 
 var builder = WebApplication.CreateBuilder(args);
 
+
+// Setup Serilog
+Log.Logger = new LoggerConfiguration()
+    .WriteTo.Console()
+    .WriteTo.File("Logs/TaskManager.txt", rollingInterval: RollingInterval.Day)
+    .Enrich.FromLogContext()
+    .MinimumLevel.Information()
+    .CreateLogger();
+
+// Remove default logging providers and use only Serilog
+builder.Host.UseSerilog();
 // Add services to the container.
 
 builder.Services.AddControllers();
@@ -55,12 +68,18 @@ builder.Services.AddSwaggerGen(options =>
 
 // Register Repoitories and Services
 builder.Services.AddScoped<ITokenRepository, TokenRepository>();
+builder.Services.AddScoped<ITaskManagerRepo, TaskManagerRepo>();
+
+
 
 // Register DB
 builder.Services.AddDbContext<AuthDBContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("TaskManagerAuthDB")));
 
-// Identity
+
+//builder.Services.AddDbContext<TaskManagerDBContext>(options =>
+//    options.UseSqlServer(builder.Configuration.GetConnectionString("TaskManagerDb")));// Identity
+
 builder.Services.AddIdentity<IdentityUser, IdentityRole>()
     .AddEntityFrameworkStores<AuthDBContext>()
     .AddDefaultTokenProviders();
@@ -104,6 +123,9 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+// Custom error handling middleware
+app.UseMiddleware<ExceptionHandleMiddleware>();
+
 app.UseHttpsRedirection();
 
 app.UseAuthorization();
@@ -111,3 +133,5 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
+
+builder.Logging.ClearProviders();

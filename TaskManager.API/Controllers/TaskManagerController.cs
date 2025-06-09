@@ -23,12 +23,16 @@ namespace TaskManager.Controllers
 
         [HttpPost]
         [Route("getTasks")]
-        public async Task<ActionResult<Response>> getAllTasks(UserIdDto request)
+        public async Task<ActionResult<Response>> getAllTasks(UserIdDto request, [FromQuery] string? filterOn, [FromQuery] string? filterQuery, [FromQuery] string? sortBy, [FromQuery] bool? isAscending,
+            [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
         {
             _logger.LogInformation("getAllTasks called with UserId: {UserId} at {Time}", request.UserId, DateTime.UtcNow);
+            _logger.LogInformation("Pagination - PageNumber: {PageNumber}, PageSize: {PageSize}", pageNumber, pageSize);
+            _logger.LogInformation("Filtering - FilterOn: {FilterOn}, FilterQuery: {FilterQuery}", filterOn ?? "null", filterQuery ?? "null");
+            _logger.LogInformation("Sorting - SortBy: {SortBy}, IsAscending: {IsAscending}", sortBy ?? "null", isAscending ?? true);
             try
             {
-                var tasks = await _taskManagerRepo.GetAllTasksAsync(request.UserId);
+                var tasks = await _taskManagerRepo.GetAllTasksAsync(request.UserId, filterOn, filterQuery, sortBy, isAscending ?? true, pageNumber, pageSize);
                 if (tasks == null || !tasks.Any())
                 {
                     _logger.LogWarning("No tasks found for userId: {UserId} at {Time}", request.UserId, DateTime.UtcNow);
