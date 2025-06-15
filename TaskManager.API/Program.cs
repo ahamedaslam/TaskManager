@@ -8,6 +8,7 @@ using System.Text;
 using TaskManager.DBContext;
 using TaskManager.IRepository;
 using TaskManager.Middleware;
+using TaskManager.Models;
 using TaskManager.Repository;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -72,17 +73,21 @@ builder.Services.AddScoped<ITaskManagerRepo, TaskManagerRepo>();
 
 
 
-// Register DB
+// Register DBContext with SQL Server
 builder.Services.AddDbContext<AuthDBContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("TaskManagerAuthDB")));
 
 
-//builder.Services.AddDbContext<TaskManagerDBContext>(options =>
-//    options.UseSqlServer(builder.Configuration.GetConnectionString("TaskManagerDb")));// Identity
+// Register Identity services
 
-builder.Services.AddIdentity<IdentityUser, IdentityRole>()
+//builder.Services.AddIdentity<IdentityUser, IdentityRole>()
+//    .AddEntityFrameworkStores<AuthDBContext>()
+//    .AddDefaultTokenProviders();
+
+builder.Services.AddIdentity<ApplicationUser, IdentityRole>()
     .AddEntityFrameworkStores<AuthDBContext>()
     .AddDefaultTokenProviders();
+
 
 // Password Policy
 builder.Services.Configure<IdentityOptions>(options =>

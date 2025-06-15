@@ -11,11 +11,10 @@ namespace TaskManager.Models
         public DateTime DueTime { get; set; }   
         public bool IsCompleted { get; set; }
         public TaskPriority Priority { get; set; } // e.g., "Low", "Medium", "High"
-
         public string UserId { get; set; }  // Foreign key to AspNetUsers
 
         [ForeignKey("UserId")]
-        public IdentityUser User { get; set; } // Navigation property to Identity user
+        public ApplicationUser User { get; set; } // Navigation property to Identity user
     }
 }
     

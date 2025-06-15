@@ -4,6 +4,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using TaskManager.IRepository;
+using TaskManager.Models;
 
 namespace TaskManager.Repository
 {
@@ -25,6 +26,12 @@ namespace TaskManager.Repository
             var claims = new List<Claim>();
 
             claims.Add(new Claim(ClaimTypes.Email, user.Email));
+            // Include TenantId if available
+            if (user is ApplicationUser appUser && !string.IsNullOrWhiteSpace(appUser.TenantId))
+            {
+                claims.Add(new Claim("TenantId", appUser.TenantId)); // Use a custom claim type
+            }
+
 
             // Add Role Claims
             foreach (var role in roles)

@@ -1,6 +1,8 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
+using TaskManager.DBContext;
 using TaskManager.DTOs.Auth;
 using TaskManager.IRepository;
 using TaskManager.Models;
@@ -12,17 +14,20 @@ namespace TaskManager.Controllers
     [ApiController]
     public class AuthController : ControllerBase
     {
-        private readonly UserManager<IdentityUser> _userManager;
+        private readonly UserManager<ApplicationUser> _userManager;
         private readonly ITokenRepository _tokenRepository;
         private readonly ILogger<AuthController> _logger;
+        private readonly AuthDBContext _context; // Assuming you have a DbContext for your application
 
-        public AuthController(UserManager<IdentityUser> userManager,
+        public AuthController(UserManager<ApplicationUser> userManager,
                                ITokenRepository tokenRepository,
-                               ILogger<AuthController> logger)
+                               ILogger<AuthController> logger,
+                               AuthDBContext context)
         {
             _userManager = userManager;
             _tokenRepository = tokenRepository;
             _logger = logger;
+            _context = context;
         }
 
         [HttpPost]
@@ -30,73 +35,100 @@ namespace TaskManager.Controllers
         public async Task<ActionResult<Response>> RegisterUser([FromBody] RegisterRequestDTO registerRequestDTO)
         {
             var logId = Guid.NewGuid();
+            _logger.LogDebug("RegisterUser invoked with payload: {Payload}", JsonSerializer.Serialize(registerRequestDTO));
 
+            try
             {
-                _logger.LogDebug("RegisterUser invoked with payload: {Payload}", JsonSerializer.Serialize(registerRequestDTO));
+                _logger.LogInformation("Initiating user registration for {Username} - {LogId}", registerRequestDTO.Username, logId);
 
-                try
+                string tenantId;
+
+                if (registerRequestDTO.Roles.Contains("Admin", StringComparer.OrdinalIgnoreCase))
                 {
-                    _logger.LogInformation("Initiating user registration for {Username} - {LogId}", registerRequestDTO.Username, logId);
-
-                    var identityUser = new IdentityUser
+                    // Admin - Create new tenant
+                    var newTenant = new Tenant
                     {
-                        UserName = registerRequestDTO.Username,
-                        Email = registerRequestDTO.Username
+                        Id = Guid.NewGuid().ToString(),
+                        Name = $"{registerRequestDTO.Username}_Tenant"
                     };
 
-                    var identityResult = await _userManager.CreateAsync(identityUser, registerRequestDTO.Password);
+                    await _context.Tenants.AddAsync(newTenant);
+                    await _context.SaveChangesAsync();
 
-                    if (identityResult.Succeeded)
+                    tenantId = newTenant.Id;
+                    _logger.LogInformation("Created new tenant with Id: {TenantId} for admin user", tenantId);
+                }
+                else
+                {
+                    // Normal - use provided tenant ID
+                    tenantId = registerRequestDTO.TenantId;
+
+                    var tenantExists = await _context.Tenants.AnyAsync(t => t.Id == tenantId);
+                    if (!tenantExists)
                     {
-                        if (registerRequestDTO.Roles != null && registerRequestDTO.Roles.Any())
+                        return BadRequest(new Response
                         {
-                            foreach (var role in registerRequestDTO.Roles)
-                            {
-                                await _userManager.AddToRoleAsync(identityUser, role);
-                                _logger.LogDebug("Role '{Role}' assigned to user {Username}", role, registerRequestDTO.Username);
-                            }
+                            ResponseCode = 1002,
+                            ResponseDescription = "Invalid TenantId provided."
+                        });
+                    }
+                }
+
+                var identityUser = new ApplicationUser
+                {
+                    UserName = registerRequestDTO.Username,
+                    Email = registerRequestDTO.Username,
+                    TenantId = tenantId
+                };
+
+                var identityResult = await _userManager.CreateAsync(identityUser, registerRequestDTO.Password);
+
+                if (identityResult.Succeeded)
+                {
+                    if (registerRequestDTO.Roles != null && registerRequestDTO.Roles.Any())
+                    {
+                        foreach (var role in registerRequestDTO.Roles)
+                        {
+                            await _userManager.AddToRoleAsync(identityUser, role);
+                            _logger.LogDebug("Role '{Role}' assigned to user {Username}", role, registerRequestDTO.Username);
                         }
-
-                        var response = new Response
-                        {
-                            ResponseCode = 0,
-                            ResponseDescription = "User registered successfully."
-                        };
-
-                        _logger.LogDebug("RegisterUser response: {Response}", JsonSerializer.Serialize(response));
-                        return Ok(response);
                     }
-                    else
+
+                    return Ok(new Response
                     {
-                        var errorDetails = string.Join(", ", identityResult.Errors.Select(e => e.Description));
-                        var response = new Response
-                        {
-                            ResponseCode = 1001,
-                            ResponseDescription = "Failed to register user: " + errorDetails
-                        };
-
-                        _logger.LogWarning("User registration failed - {LogId}. Errors: {Errors}", logId, errorDetails);
-                        _logger.LogDebug("RegisterUser response: {Response}", JsonSerializer.Serialize(response));
-                        return Ok(response);
-                    }
+                        ResponseCode = 0,
+                        ResponseDescription = "User registered successfully."
+                    });
                 }
-                catch (Exception ex)
+                else
                 {
-                    _logger.LogError(ex, "Unexpected error during registration - {LogId}", logId);
-
-                    var response = new Response
+                    var errorDetails = string.Join(", ", identityResult.Errors.Select(e => e.Description));
+                    return Ok(new Response
                     {
-                        ResponseCode = 3236,
-                        ResponseDescription = $"An unexpected error occurred: {ex.Message}"
-                    };
-
-                    _logger.LogDebug("RegisterUser response: {Response}", JsonSerializer.Serialize(response));
-                    return Ok(response);
+                        ResponseCode = 1001,
+                        ResponseDescription = "Failed to register user: " + errorDetails
+                    });
                 }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unexpected error during registration - {LogId}", logId);
+
+                return Ok(new Response
+                {
+                    ResponseCode = 3236,
+                    ResponseDescription = $"An unexpected error occurred: {ex.Message}"
+                });
             }
         }
 
 
+        /// <summary>
+        ///     
+        /// </summary>
+        /// <param name="req"></param>
+        /// <returns></returns>
+        /// aslam@test.com   aslam@123
         [HttpPost]
         [Route("login")]
         public async Task<ActionResult<Response>> LoginUser([FromBody] LoginRequestDTO req)
@@ -159,7 +191,8 @@ namespace TaskManager.Controllers
                             User = new
                             {
                                 req.Username,
-                                Roles = roles
+                                Roles = roles,
+                                TenantId = identityUser.TenantId,
                             }
                         }
                     };

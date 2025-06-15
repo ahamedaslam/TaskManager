@@ -13,5 +13,8 @@ namespace TaskManager.DTOs.Auth
         public string Password { get; set; }
 
         public string[] Roles { get; set; }
+
+        //[Required]
+        public string? TenantId { get; set; } // Optional for Admin, Required for Normal
     }
 }
