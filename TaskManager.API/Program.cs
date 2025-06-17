@@ -5,11 +5,18 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Serilog;
 using System.Text;
+using System.Text.Json;
 using TaskManager.DBContext;
+using TaskManager.Helper;
+using TaskManager.Interface;
+using TaskManager.InterfaceService;
 using TaskManager.IRepository;
+using TaskManager.IServices;
 using TaskManager.Middleware;
 using TaskManager.Models;
 using TaskManager.Repository;
+using TaskManager.Services;
+using TaskManager.Utility;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -66,23 +73,29 @@ builder.Services.AddSwaggerGen(options =>
     });
 });
 
+// Register AutoMapper
+builder.Services.AddAutoMapper(typeof(AutoMapperProfile));
 
-// Register Repoitories and Services
+//Register Services and Interfaces
+builder.Services.AddScoped<TaskManagerService>();
+builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<ITenantService,TenantService>();
+builder.Services.AddScoped<CurrentUserService>();
+
+
+// Register Repoitories and Interfaces
 builder.Services.AddScoped<ITokenRepository, TokenRepository>();
 builder.Services.AddScoped<ITaskManagerRepo, TaskManagerRepo>();
+builder.Services.AddScoped<ITenantRepository,TenantRepository>();
+
+// Register AddHttpContextAccessor
+builder.Services.AddHttpContextAccessor();
 
 
 
 // Register DBContext with SQL Server
 builder.Services.AddDbContext<AuthDBContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("TaskManagerAuthDB")));
-
-
-// Register Identity services
-
-//builder.Services.AddIdentity<IdentityUser, IdentityRole>()
-//    .AddEntityFrameworkStores<AuthDBContext>()
-//    .AddDefaultTokenProviders();
 
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>()
     .AddEntityFrameworkStores<AuthDBContext>()
@@ -101,7 +114,12 @@ builder.Services.Configure<IdentityOptions>(options =>
 });
 
 // JWT Authentication
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+
     .AddJwtBearer(options =>
     {
         options.TokenValidationParameters = new TokenValidationParameters
@@ -129,13 +147,39 @@ if (app.Environment.IsDevelopment())
 }
 
 // Custom error handling middleware
-app.UseMiddleware<ExceptionHandleMiddleware>();
+app.UseMiddleware<ExceptionHandleMiddleware>(); // Custom exception handling (top level)
 
-app.UseHttpsRedirection();
 
-app.UseAuthorization();
+app.UseStatusCodePages(async context =>        // Handles known status codes like 400/403/404
+{
+    var response = context.HttpContext.Response;
+    response.ContentType = "application/json";
 
-app.MapControllers();
+    var result = response.StatusCode switch
+    {
+        404 => JsonSerializer.Serialize(ResponseHelper.NotFound()),
+        403 => JsonSerializer.Serialize(ResponseHelper.Unauthorized()),
+        400 => JsonSerializer.Serialize(ResponseHelper.BadRequest()),
+        409 => JsonSerializer.Serialize(ResponseHelper.Conflict()),
+        422 => JsonSerializer.Serialize(ResponseHelper.Unprocessable()),
+        _ => null
+    };
+
+    if (result != null)
+    {
+        await response.WriteAsync(result);
+    }
+});
+
+app.UseHttpsRedirection(); // Enforces HTTPS
+
+app.UseAuthentication(); // ? FIRST: Authenticate the user (sets the User principal)
+
+//app.UseMiddleware<TaskManager.Middleware.CustomAuthorizationMiddleware>(); // Custom handling for 401/403
+
+app.UseAuthorization(); // ? THEN: Apply role-based policies or [Authorize] checks
+
+app.MapControllers(); // Route the request to the controller
 
 app.Run();
 

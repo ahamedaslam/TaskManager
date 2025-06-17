@@ -8,13 +8,22 @@ namespace TaskManager.Models
         public Guid Id { get; set; }
         public string Title { get; set; }
         public string Description { get; set; }
-        public DateTime DueTime { get; set; }   
+        public DateTime DueTime { get; set; }
         public bool IsCompleted { get; set; }
         public TaskPriority Priority { get; set; } // e.g., "Low", "Medium", "High"
-        public string UserId { get; set; }  // Foreign key to AspNetUsers
+
+        // Foreign key to Tenant
+        public string TenantId { get; set; }
+
+        [ForeignKey("TenantId")]
+        public Tenant Tenant { get; set; }  // Add this navigation property
+
+        
+        
+        // Foreign key to ApplicationUser
+        public string UserId { get; set; }
 
         [ForeignKey("UserId")]
-        public ApplicationUser User { get; set; } // Navigation property to Identity user
+        public ApplicationUser User { get; set; }
     }
 }
-    

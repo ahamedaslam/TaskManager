@@ -1,5 +1,4 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using System;
 using TaskManager.DBContext;
 using TaskManager.DTOs.TaskManager;
 using TaskManager.IRepository;
@@ -17,17 +16,19 @@ namespace TaskManager.Repository
             _appDbContext = appDbContext ?? throw new ArgumentNullException(nameof(appDbContext));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
-        public async Task<TaskItem> CreateTaskAsync(TaskItem taskItem)
+        public async Task<TaskItem> CreateTaskAsync(TaskItem taskItem, string tenantId)
         {
+            taskItem.TenantId = tenantId; 
             await _appDbContext.TaskItems.AddAsync(taskItem);
             await _appDbContext.SaveChangesAsync();
             return taskItem;
         }
 
-        public async Task<bool> DeleteTaskAsync(Guid taskId, string userId)
+
+        public async Task<bool> DeleteTaskAsync(Guid taskId, string userId,string tenantId)
         {
             //FindAsync is best when you want to retrieve an entity by its primary key.
-            var taskItem = await _appDbContext.TaskItems.FirstOrDefaultAsync(t => t.Id == taskId && t.UserId == userId);
+            var taskItem = await _appDbContext.TaskItems.FirstOrDefaultAsync(t => t.Id == taskId && t.UserId == userId && t.TenantId == tenantId);
             if (taskItem == null)
             {
                 return false; // Task not found
@@ -45,11 +46,13 @@ namespace TaskManager.Repository
 
         //List<T> is a concrete collection type that allows for dynamic resizing and provides methods for adding, removing, and accessing elements by index.
         // that stores items in memory.
-        public async Task<IEnumerable<TaskItem>> GetAllTasksAsync(string userId, string? filterOn = null, string? filterQuery = null, string? sortBy = null, bool Ascending = true, int pageNumber = 1, int pageSize = 10)
+        public async Task<IEnumerable<TaskItem>> GetAllTasksAsync(string userId,string tenantId, string? filterOn = null, string? filterQuery = null, string? sortBy = null, bool Ascending = true, int pageNumber = 1, int pageSize = 10)
         {
-         // Start with base query
-            var tasksQuery = _appDbContext.TaskItems.AsQueryable();
-
+            // Start with base query
+            // Base query with tenant + user scope
+            var tasksQuery = _appDbContext.TaskItems
+                                          .Where(t => t.TenantId == tenantId && t.UserId == userId)
+                                          .AsQueryable();
             // Apply filtering
             if (!string.IsNullOrWhiteSpace(filterOn) && !string.IsNullOrWhiteSpace(filterQuery))
             {
@@ -88,14 +91,48 @@ namespace TaskManager.Repository
 
         }
 
-        public async Task<TaskItem> GetTaskByIdAsync(Guid taskId, string userId)
+        public async Task<IEnumerable<TaskItem>> GetAllTasksByTenantIdAsync(string tenantId, string? filterOn, string? filterQuery, string? sortBy, bool Ascending, int pageNumber, int pageSize)
         {
-            return await _appDbContext.TaskItems.FirstOrDefaultAsync(t => t.Id == taskId && t.UserId == userId);
+            var tasksQuery = _appDbContext.TaskItems
+                                          .Where(t => t.TenantId == tenantId)
+                                          .AsQueryable();
+
+            // Filtering
+            if (!string.IsNullOrWhiteSpace(filterOn) && !string.IsNullOrWhiteSpace(filterQuery))
+            {
+                if (filterOn.Equals("Title", StringComparison.OrdinalIgnoreCase))
+                {
+                    tasksQuery = tasksQuery.Where(x => x.Title.Contains(filterQuery));
+                }
+            }
+
+            // Sorting
+            if (!string.IsNullOrWhiteSpace(sortBy))
+            {
+                tasksQuery = sortBy switch
+                {
+                    "Title" => Ascending ? tasksQuery.OrderBy(x => x.Title) : tasksQuery.OrderByDescending(x => x.Title),
+                    "Priority" => Ascending ? tasksQuery.OrderBy(x => x.Priority) : tasksQuery.OrderByDescending(x => x.Priority),
+                    "DueTime" => Ascending ? tasksQuery.OrderBy(x => x.DueTime) : tasksQuery.OrderByDescending(x => x.DueTime),
+                    _ => tasksQuery
+                };
+            }
+
+            // Pagination
+            var skipResults = (pageNumber - 1) * pageSize;
+
+            return await tasksQuery.Skip(skipResults).Take(pageSize).ToListAsync();
         }
 
-        public async Task<bool> MarkTaskAsCompletedAsync(Guid taskId, string userId)
+
+        public async Task<TaskItem> GetTaskByIdAsync(Guid taskId, string userId, string tenantId)
         {
-            var taskItem = await _appDbContext.TaskItems.FirstOrDefaultAsync(t => t.Id == taskId && t.UserId == userId);
+            return await _appDbContext.TaskItems.FirstOrDefaultAsync(t => t.Id == taskId && t.UserId == userId && t.TenantId == tenantId);
+        }
+
+        public async Task<bool> MarkTaskAsCompletedAsync(Guid taskId, string userId, string tenantId)
+        {
+            var taskItem = await _appDbContext.TaskItems.FirstOrDefaultAsync(t => t.Id == taskId && t.UserId == userId && t.TenantId == tenantId);
             if (taskItem == null)
             {
                 return false; // Task not found
@@ -110,10 +147,10 @@ namespace TaskManager.Repository
             return true;
         }
 
-        public async Task<bool> MarkTaskAsNotCompletedAsync(Guid taskId, string userId)
+        public async Task<bool> MarkTaskAsNotCompletedAsync(Guid taskId, string userId, string tenantId)
         {
             var taskItem = await _appDbContext.TaskItems
-                .FirstOrDefaultAsync(t => t.Id == taskId && t.UserId == userId);
+                .FirstOrDefaultAsync(t => t.Id == taskId && t.UserId == userId && t.TenantId == t.TenantId);
             if (taskItem == null)
             {
                 return false; // Task not found
@@ -128,9 +165,9 @@ namespace TaskManager.Repository
             return true;
         }
 
-        public async Task<TaskItem> UpdateTaskAsync(TaskItemDTO taskItem)
+        public async Task<TaskItem> UpdateTaskAsync(TaskItemDTO taskItem,string tenantId)
         {
-            var existingTask = await _appDbContext.TaskItems.FirstOrDefaultAsync(t => t.Id == taskItem.Id && t.UserId == taskItem.UserId);
+            var existingTask = await _appDbContext.TaskItems.FirstOrDefaultAsync(t => t.Id == taskItem.Id && t.UserId == taskItem.UserId && t.TenantId == taskItem.TenantId);
             if (existingTask == null)
             {
                 return null;

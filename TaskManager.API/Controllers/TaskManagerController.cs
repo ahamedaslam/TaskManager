@@ -1,212 +1,104 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
-using System.Threading.Channels;
-using TaskManager.DBContext;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using TaskManager.DTOs.TaskManager;
-using TaskManager.IRepository;
+using TaskManager.Helper;
 using TaskManager.Models;
+using TaskManager.Services;
 
 namespace TaskManager.Controllers
 {
-    [ApiController]
+
+    [ApiController] 
     [Route("api/[controller]")]
+
+    //•	If your application supports multiple authentication schemes (e.g., cookies, API keys, Bearer tokens), this attribute restricts access to only Bearer-authenticated users.
     public class TaskManagerController : ControllerBase
     {
-        private readonly ITaskManagerRepo _taskManagerRepo;
+        private readonly TaskManagerService _taskManagerService;
         private readonly ILogger<TaskManagerController> _logger;
+        //Role-Based Access Control (RBAC)
 
-        public TaskManagerController(ITaskManagerRepo taskManagerRepo, ILogger<TaskManagerController> logger)
+        public TaskManagerController(TaskManagerService taskManagerService, ILogger<TaskManagerController> logger)
         {
-            _taskManagerRepo = taskManagerRepo;
+            _taskManagerService = taskManagerService;
             _logger = logger;
         }
 
-        [HttpPost]
-        [Route("getTasks")]
-        public async Task<ActionResult<Response>> getAllTasks(UserIdDto request, [FromQuery] string? filterOn, [FromQuery] string? filterQuery, [FromQuery] string? sortBy, [FromQuery] bool? isAscending,
+        [Authorize(Roles = "Admin,Normal")]
+        [HttpPost("getTasks")]
+        public async Task<ActionResult<Response>> GetAllTasks(UserIdDto request, string tenantId,[FromQuery] string? filterOn,
+            [FromQuery] string? filterQuery, [FromQuery] string? sortBy, [FromQuery] bool? isAscending,
             [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
         {
-            _logger.LogInformation("getAllTasks called with UserId: {UserId} at {Time}", request.UserId, DateTime.UtcNow);
-            _logger.LogInformation("Pagination - PageNumber: {PageNumber}, PageSize: {PageSize}", pageNumber, pageSize);
-            _logger.LogInformation("Filtering - FilterOn: {FilterOn}, FilterQuery: {FilterQuery}", filterOn ?? "null", filterQuery ?? "null");
-            _logger.LogInformation("Sorting - SortBy: {SortBy}, IsAscending: {IsAscending}", sortBy ?? "null", isAscending ?? true);
-            try
-            {
-                var tasks = await _taskManagerRepo.GetAllTasksAsync(request.UserId, filterOn, filterQuery, sortBy, isAscending ?? true, pageNumber, pageSize);
-                if (tasks == null || !tasks.Any())
-                {
-                    _logger.LogWarning("No tasks found for userId: {UserId} at {Time}", request.UserId, DateTime.UtcNow);
-                    return NotFound(new Response { ResponseCode = 404, ResponseDescription = "No tasks found." });
-                }
-                _logger.LogInformation("Tasks fetched successfully for userId: {UserId} at {Time}. Count: {Count}", request.UserId, DateTime.UtcNow, tasks.Count());
-                return Ok(new Response
-                {
-                    ResponseCode = 0,
-                    ResponseDescription = "Tasks fetched successfully.",
-                    ResponseDatas = tasks
-                });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error fetching tasks for userId: {UserId} at {Time}", request.UserId, DateTime.UtcNow);
-                return StatusCode(500, new Response { ResponseCode = 500, ResponseDescription = "Internal server error." });
-            }
+            _logger.LogInformation("[Controller] GetAllTasks called with UserId: {UserId}", request.UserId);
+
+            var response = await _taskManagerService.GetAllTasksAsync(request,tenantId, filterOn, filterQuery, sortBy, isAscending ?? true, pageNumber, pageSize);
+
+            return StatusCode(HttpStatusMapper.GetHttpStatusCode(response.ResponseCode), response);
         }
 
-        [HttpPost]
-        [Route("getById")]
+        [Authorize(Roles = "Admin,Normal")]
+        [HttpPost("getById")]
         public async Task<ActionResult<Response>> GetTaskById(TaskDto request)
         {
-            _logger.LogInformation("GetTaskById called with TaskId: {TaskId}, UserId: {UserId} at {Time}", request.taskId, request.userId, DateTime.UtcNow);
-            try
-            {
-                var task = await _taskManagerRepo.GetTaskByIdAsync(request.taskId, request.userId);
-                if (task == null)
-                {
-                    _logger.LogWarning("Task with ID: {TaskId} not found for userId: {UserId} at {Time}", request.taskId, request.userId, DateTime.UtcNow);
-                    return NotFound(new Response { ResponseCode = 404, ResponseDescription = "Task not found." });
-                }
-                _logger.LogInformation("Task with ID: {TaskId} fetched successfully for userId: {UserId} at {Time}", request.taskId, request.userId, DateTime.UtcNow);
-                return Ok(new Response
-                {
-                    ResponseCode = 0,
-                    ResponseDescription = "Task fetched successfully.",
-                    ResponseDatas = task
-                });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error fetching task with ID: {TaskId} for userId: {UserId} at {Time}", request.taskId, request.userId, DateTime.UtcNow);
-                return StatusCode(500, new Response { ResponseCode = 500, ResponseDescription = "Internal server error." });
-            }
+            _logger.LogInformation("[Controller] GetTaskById called with TaskId: {TaskId}, UserId: {UserId}", request.taskId, request.userId);
+
+            var response = await _taskManagerService.GetTaskByIdAsync(request,request.tenantId);
+
+            return StatusCode(HttpStatusMapper.GetHttpStatusCode(response.ResponseCode), response);
         }
 
-        [HttpPost]
-        [Route("create")]
+        [Authorize(Roles = "Admin")]
+        [HttpPost("create")]
         public async Task<ActionResult<Response>> CreateTask(TaskItemDTO request)
         {
-            _logger.LogInformation("CreateTask called for userId: {UserId} at {Time} with Title: {Title}", request.UserId, DateTime.UtcNow, request.Title);
-            try
-            {
-                var taskItem = new TaskItem
-                {
-                    Title = request.Title,
-                    Description = request.Description,
-                    UserId = request.UserId,
-                    IsCompleted = false,
-                    Priority = request.Priority,
-                };
-                var createdTask = await _taskManagerRepo.CreateTaskAsync(taskItem);
-                _logger.LogInformation("Task created successfully with ID: {TaskId} for userId: {UserId} at {Time}", createdTask.Id, request.UserId, DateTime.UtcNow);
-                return CreatedAtAction(nameof(GetTaskById), new { taskId = createdTask.Id, userId = request.UserId }, new Response
-                {
-                    ResponseCode = 0,
-                    ResponseDescription = "Task created successfully.",
-                    ResponseDatas = createdTask
-                });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error creating task for userId: {UserId} at {Time}", request.UserId, DateTime.UtcNow);
-                return StatusCode(500, new Response { ResponseCode = 500, ResponseDescription = "Internal server error." });
-            }
+            _logger.LogInformation("The role is: {Role}", User.IsInRole("ADMIN") ? "ADMIN" : "NORMAL");
+            _logger.LogInformation("[Controller] CreateTask called for UserId: {UserId}, Title: {Title}", request.UserId, request.Title);
+
+            var response = await _taskManagerService.CreateTaskAsync(request,request.TenantId);
+
+            return StatusCode(HttpStatusMapper.GetHttpStatusCode(response.ResponseCode), response);
         }
 
-        [HttpDelete]
-        [Route("delete")]
+        [Authorize(Roles = "Admin")]
+        [HttpDelete("delete")]
         public async Task<ActionResult<Response>> DeleteTask(TaskDto request)
         {
-            _logger.LogInformation("DeleteTask called with TaskId: {TaskId} for userId: {UserId} at {Time}", request.taskId, request.userId, DateTime.UtcNow);
-            try
-            {
-                var isDeleted = await _taskManagerRepo.DeleteTaskAsync(request.taskId, request.userId);
-                if (!isDeleted)
-                {
-                    _logger.LogWarning("Task with ID: {TaskId} not found for userId: {UserId} at {Time}", request.taskId, request.userId, DateTime.UtcNow);
-                    return NotFound(new Response { ResponseCode = 404, ResponseDescription = "Task not found." });
-                }
-                _logger.LogInformation("Task with ID: {TaskId} deleted successfully for userId: {UserId} at {Time}", request.taskId, request.userId, DateTime.UtcNow);
-                return Ok(new Response
-                {
-                    ResponseCode = 0,
-                    ResponseDescription = "Task deleted successfully."
-                });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error deleting task with ID: {TaskId} for userId: {UserId} at {Time}", request.taskId, request.userId, DateTime.UtcNow);
-                return StatusCode(500, new Response { ResponseCode = 500, ResponseDescription = "Internal server error." });
-            }
+            _logger.LogInformation("[Controller] DeleteTask called for TaskId: {TaskId}, UserId: {UserId}", request.taskId, request.userId);
+
+            var response = await _taskManagerService.DeleteTaskAsync(request,request.tenantId);
+
+            return StatusCode(HttpStatusMapper.GetHttpStatusCode(response.ResponseCode), response);
         }
 
-        [HttpPut]
-        [Route("update")]
-        public async Task<ActionResult<Response>> UpdateTask([FromBody] TaskItemDTO request)
+        [Authorize(Roles = "Admin")]
+        [HttpPut("update")]
+        public async Task<ActionResult<Response>> UpdateTask(TaskItemDTO request)
         {
-            _logger.LogInformation("UpdateTask called for TaskId: {TaskId} at {Time}", request.Id, DateTime.UtcNow);
+            _logger.LogInformation("[Controller] UpdateTask called for TaskId: {TaskId}", request.Id);
+
             if (request == null)
             {
-                _logger.LogWarning("Task is null");
-                return BadRequest(new Response
-                {
-                    ResponseCode = 400,
-                    ResponseDescription = "Task ID mismatch."
-                });
+                _logger.LogWarning("[Controller] Task update failed: null request");
+                return BadRequest(new Response { ResponseCode = 400, ResponseDescription = "Invalid request." });
             }
-            try
-            {
-                var result = await _taskManagerRepo.UpdateTaskAsync(request);
-                if (result == null)
-                {
-                    _logger.LogWarning("Task with ID: {TaskId} not found for update at {Time}", request.Id, DateTime.UtcNow);
-                    return NotFound(new Response
-                    {
-                        ResponseCode = 404,
-                        ResponseDescription = "Task not found."
-                    });
-                }
 
-                _logger.LogInformation("Task with ID: {TaskId} updated successfully at {Time}", request.Id, DateTime.UtcNow);
-                return Ok(new Response
-                {
-                    ResponseCode = 0,
-                    ResponseDescription = "Task updated successfully.",
-                    ResponseDatas = result
-                });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error updating task with ID: {TaskId} at {Time}", request.Id, DateTime.UtcNow);
-                return StatusCode(500, new Response { ResponseCode = 500, ResponseDescription = "Internal server error." });
-            }
+            var response = await _taskManagerService.UpdateTaskAsync(request, request.TenantId);
+
+            return StatusCode(HttpStatusMapper.GetHttpStatusCode(response.ResponseCode), response);
         }
 
-        [HttpPatch]
-        [Route("setTaskCompletionStatus")]
-        public async Task<ActionResult<Response>> SetTaskCompletionStatus(Guid taskId, string userId, [FromQuery] bool isCompleted)
+        [Authorize(Roles = "Admin,Normal")]
+        [HttpPatch("setTaskCompletionStatus")]
+        public async Task<ActionResult<Response>> SetTaskCompletionStatus(Guid taskId, string userId, [FromQuery] bool isCompleted, string tenantId)
         {
+            _logger.LogInformation("[Controller] SetTaskCompletionStatus called for TaskId: {TaskId}, IsCompleted: {IsCompleted}", taskId, isCompleted);
 
-            _logger.LogInformation("SetTaskCompletionStatus called for TaskId: {TaskId}, UserId: {UserId}, IsCompleted: {IsCompleted} at {Time}", taskId, userId, isCompleted, DateTime.UtcNow);
+            var response = await _taskManagerService.SetTaskCompletionStatusAsync(taskId, userId, isCompleted,tenantId);
 
-            bool result = isCompleted ? await _taskManagerRepo.MarkTaskAsCompletedAsync(taskId, userId) : await _taskManagerRepo.MarkTaskAsNotCompletedAsync(taskId, userId);
-
-            if (!result)
-            {
-                var notFoundResponse = new Response
-                {
-                    ResponseCode = 404,
-                    ResponseDescription = "Task not found."
-                };
-                return NotFound(notFoundResponse);
-            }
-
-            var successResponse = new Response
-            {
-                ResponseCode = 0,
-                ResponseDescription = "Task completion status updated successfully."
-            };
-            return Ok(successResponse);
+            return StatusCode(HttpStatusMapper.GetHttpStatusCode(response.ResponseCode), response);
         }
+
 
     }
 }

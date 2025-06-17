@@ -28,7 +28,7 @@ namespace TaskManager.DBContext
                 .HasForeignKey(u => u.TenantId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            var adminRoleId = "55e14e82-8ef2-44d0-8f75-be74a4bdfa5f";
+            var adminRoleId = "55e14e82-8ef2-44d0-8f75-be74a4bdfa5f";  //Guid.NewGuid().ToString();
             var normalRoleId = "2a0c839e-ded6-4715-b8bd-53a514cb3a26";
 
             var roles = new List<IdentityRole> //sed up initial roles

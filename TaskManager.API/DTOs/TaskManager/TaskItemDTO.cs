@@ -10,6 +10,7 @@ namespace TaskManager.DTOs.TaskManager
         public DateTime DueTime { get; set; }
         public bool IsCompleted { get; set; }
         public TaskPriority Priority { get; set; }
+        public string TenantId { get; set; } // Foreign key to Tenant
 
         public string UserId { get; set; }
     }

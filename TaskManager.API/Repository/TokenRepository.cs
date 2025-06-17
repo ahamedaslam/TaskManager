@@ -23,38 +23,40 @@ namespace TaskManager.Repository
 
         public string CreateJwtToken(IdentityUser user, List<string> roles)
         {
-            var claims = new List<Claim>();
+            // Initialize claims
+            var claims = new List<Claim>
+            {
+                new Claim(ClaimTypes.Email, user.Email ?? string.Empty)
+            };
 
-            claims.Add(new Claim(ClaimTypes.Email, user.Email));
-            // Include TenantId if available
+            // Add TenantId if the user is of type ApplicationUser
             if (user is ApplicationUser appUser && !string.IsNullOrWhiteSpace(appUser.TenantId))
             {
-                claims.Add(new Claim("TenantId", appUser.TenantId)); // Use a custom claim type
+                claims.Add(new Claim("TenantId", appUser.TenantId));
             }
 
-
-            // Add Role Claims
+            // Add each role as a claim
             foreach (var role in roles)
             {
                 claims.Add(new Claim(ClaimTypes.Role, role));
             }
 
-            // Get Key and Credentials
+            // Retrieve key and credentials from configuration
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]));
             var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
-            // Create the token
+            // Build the token descriptor
             var tokenDescriptor = new JwtSecurityToken(
                 issuer: _configuration["Jwt:Issuer"],
                 audience: _configuration["Jwt:Audience"],
                 claims: claims,
-                expires: DateTime.UtcNow.AddMinutes(15), // Token valid for 15 minutes
+                expires: DateTime.UtcNow.AddMinutes(15),
                 signingCredentials: credentials
             );
 
+            // Return the serialized JWT token
             return new JwtSecurityTokenHandler().WriteToken(tokenDescriptor);
-
-
         }
+
     }
 }
