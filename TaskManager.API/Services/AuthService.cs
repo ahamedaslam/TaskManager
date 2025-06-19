@@ -2,13 +2,13 @@
 using AutoMapper;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
-using System.Text.Json;
 using TaskManager.DBContext;
 using TaskManager.DTOs.Auth;
+using TaskManager.Helper;
 using TaskManager.InterfaceService;
 using TaskManager.IRepository;
 using TaskManager.Models;
+using TaskManager.Models.Response;
 
 public class AuthService : IAuthService
 {
@@ -32,10 +32,9 @@ public class AuthService : IAuthService
 
     }
 
-    public async Task<Response> RegisterUserAsync(RegisterRequestDTO registerRequestDTO)
+    public async Task<Response> RegisterUserAsync(RegisterRequestDTO registerRequestDTO,string logId)
     {
-        var logId = Guid.NewGuid();
-        _logger.LogInformation("Initiating registration for {Username} - {LogId}", registerRequestDTO.Username, logId);
+        _logger.LogInformation("[{logId}] Initiating registration for {Username}", logId,registerRequestDTO.Username);
 
         try
         {
@@ -45,11 +44,7 @@ public class AuthService : IAuthService
             var tenantExists = await _context.Tenants.AnyAsync(t => t.Id == tenantId);
             if (!tenantExists)
             {
-                return new Response
-                {
-                    ResponseCode = 1002,
-                    ResponseDescription = "Invalid TenantId provided."
-                };
+               return ResponseHelper.BadRequest("Invalid TenantId provided.");
             }
 
             // Create User
@@ -69,44 +64,32 @@ public class AuthService : IAuthService
                     foreach (var role in registerRequestDTO.Roles)
                     {
                         await _userManager.AddToRoleAsync(identityUser, role);
-                        _logger.LogDebug("Assigned role {Role} to user {Username}", role, registerRequestDTO.Username);
+                        _logger.LogDebug("[{logId}] Assigned role {Role} to user {Username}", logId,role, registerRequestDTO.Username);
                     }
                 }
 
-                return new Response
-                {
-                    ResponseCode = 0,
-                    ResponseDescription = "User registered successfully."
-                };
+                return  ResponseHelper.Success("User registered successfully..!!");
             }
             else
             {
                 var errorDetails = string.Join(", ", identityResult.Errors.Select(e => e.Description));
-                return new Response
-                {
-                    ResponseCode = 1001,
-                    ResponseDescription = "Failed to register user: " + errorDetails
-                };
+                return ResponseHelper.BadRequest($"User registration failed: {errorDetails}");
             }
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error during user registration - {LogId}", logId);
+            _logger.LogError(ex, "[{logId}] Error during user registration", logId);
 
-            return new Response
-            {
-                ResponseCode = 3236,
-                ResponseDescription = $"An unexpected error occurred: {ex.Message}"
-            };
+           return ResponseHelper.ServerError();
         }
     }
 
     
 
-    public async Task<Response> LoginUserAsync(LoginRequestDTO req)
+    public async Task<Response> LoginUserAsync(LoginRequestDTO req,string logId)
     {
-        var logId = Guid.NewGuid();
-        _logger.LogInformation("Starting login for user {Username} - {LogId}", req.Username, logId);
+
+        _logger.LogInformation("[{logId}] Starting login for user {Username}", logId,req.Username);
 
         try
         {
@@ -114,21 +97,13 @@ public class AuthService : IAuthService
 
             if (identityUser == null)
             {
-                return new Response
-                {
-                    ResponseCode = 1003,
-                    ResponseDescription = "User not found."
-                };
+             return ResponseHelper.NotFound("User not found");
             }
 
             var isPasswordValid = await _userManager.CheckPasswordAsync(identityUser, req.Password);
             if (!isPasswordValid)
             {
-                return new Response
-                {
-                    ResponseCode = 1002,
-                    ResponseDescription = "Invalid password."
-                };
+                return ResponseHelper.Unauthorized("Invalid password");
             }
 
             var roles = await _userManager.GetRolesAsync(identityUser);
@@ -144,10 +119,10 @@ public class AuthService : IAuthService
                 {
                     Token = jwtToken,
                     ExpiresAt = expiry,
-                    TokenType = "Bearer",
                     User = new
                     {
-                        req.Username,
+                        UserId = identityUser.Id,
+                        UserName = identityUser.UserName,
                         Roles = roles,
                         TenantId = identityUser.TenantId
                     }
@@ -156,13 +131,9 @@ public class AuthService : IAuthService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unexpected error during login - {LogId}", logId);
+            _logger.LogError(ex, "[{logId}] Unexpected error during login", logId);
 
-            return new Response
-            {
-                ResponseCode = 3236,
-                ResponseDescription = $"An unexpected error occurred: {ex.Message}"
-            };
+           return ResponseHelper.ServerError();
         }
     }
 }

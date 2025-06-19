@@ -7,7 +7,7 @@ using TaskManager.DTOs.Auth;
 using TaskManager.Helper;
 using TaskManager.InterfaceService;
 using TaskManager.IRepository;
-using TaskManager.Models;
+using TaskManager.Models.Response;
 
 
 namespace TaskManager.Controllers
@@ -26,19 +26,20 @@ namespace TaskManager.Controllers
         }
 
         [HttpPost("register")]
-        public async Task<ActionResult<Response>> RegisterUser(RegisterRequestDTO dto)
+        public async Task<ActionResult> RegisterUser(RegisterRequestDTO dto)
         {
-            _logger.LogInformation("RegisterUser called with Username: {Username}, TenantId: {TenantId}", dto.Username, dto.TenantId);
+            var logId = Guid.NewGuid().ToString();
+            _logger.LogInformation("[{logId}] RegisterUser called with Username: {Username}, TenantId: {TenantId}",logId, dto.Username, dto.TenantId);
 
             try
             {
-                var response = await _authService.RegisterUserAsync(dto);
-                _logger.LogInformation("User registration completed for Username: {Username} with ResponseCode: {ResponseCode}", dto.Username, response.ResponseCode);
+                var response = await _authService.RegisterUserAsync(dto,logId);
+                _logger.LogInformation("[{logId}] User registration completed for Username: {Username} with ResponseCode: {ResponseCode}",logId, dto.Username, response.ResponseCode);
                 return StatusCode(HttpStatusMapper.GetHttpStatusCode(response.ResponseCode), response);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error occurred during user registration for Username: {Username}", dto.Username);
+                _logger.LogError(ex, "[{logId}] Error occurred during user registration for Username: {Username}",logId,dto.Username);
 
    
                 var errorResponse = ResponseHelper.ServerError();
@@ -48,18 +49,19 @@ namespace TaskManager.Controllers
 
 
         [HttpPost("login")]
-        public async Task<ActionResult<Response>> LoginUser(LoginRequestDTO dto)
+        public async Task<ActionResult> LoginUser(LoginRequestDTO dto)
         {
-            _logger.LogInformation("LoginUser called with Username: {Username}", dto.Username);
+            var logId = Guid.NewGuid().ToString();  
+            _logger.LogInformation("[{logId}] Login attempt with Username: {Username}", logId,dto.Username);
             try
             {
-                var response = await _authService.LoginUserAsync(dto);
-                _logger.LogInformation("User login attempt for Username: {Username} with ResponseCode: {ResponseCode}", dto.Username, response.ResponseCode);
+                var response = await _authService.LoginUserAsync(dto,logId);
+                _logger.LogInformation("[{logId}] Login Successfull for Username: {Username} with ResponseCode: {ResponseCode}",logId, dto.Username, response.ResponseCode);
                 return Ok(response);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error occurred during user login for Username: {Username}", dto.Username);
+                _logger.LogError(ex, "[{logId}] Error occurred during user login for Username: {Username}", logId,dto.Username);
                 var errorResponse = ResponseHelper.ServerError();
                 return StatusCode(HttpStatusMapper.GetHttpStatusCode(errorResponse.ResponseCode), errorResponse);
             }
