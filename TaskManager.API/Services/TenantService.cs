@@ -1,4 +1,5 @@
 ﻿using TaskManager.DTOs.TaskManager;
+using TaskManager.Helper;
 using TaskManager.Interface;
 using TaskManager.IServices;
 using TaskManager.Models;
@@ -17,18 +18,14 @@ namespace TaskManager.Services
             _logger = logger;
         }
 
-        public async Task<Response> CreateTenantAsync(CreateTenantDTO request)
+        public async Task<Response> CreateTenantAsync(CreateTenantDTO request, string logId)
         {
             try
             {
                 var exists = await _tenantRepository.ExistsAsync(request.Name);
                 if (exists)
                 {
-                    return new Response
-                    {
-                        ResponseCode = 1001,
-                        ResponseDescription = "Tenant with the same name already exists."
-                    };
+                    return ResponseHelper.BadRequest(logId, "Tenant with this name already exists.");
                 }
 
                 var newTenant = new Tenant
@@ -37,47 +34,28 @@ namespace TaskManager.Services
                     Name = request.Name
  
                 };
-
+                 
                 var result = await _tenantRepository.CreateAsync(newTenant);
-
-                return new Response
-                {
-                    ResponseCode = 0,
-                    ResponseDescription = "Tenant created successfully.",
-                    ResponseDatas = result
-                };
+                return ResponseHelper.Success(logId,result,"Tenant created successfully.");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error while creating tenant.");
-                return new Response
-                {
-                    ResponseCode = 1006,
-                    ResponseDescription = "Internal server error."
-                };
+                _logger.LogError(ex, "[{logId}] Error while creating tenant.",logId);
+             return ResponseHelper.ServerError(logId);
             }
         }
 
-        public async Task<Response> GetAllTenantsAsync()
+        public async Task<Response> GetAllTenantsAsync(string logId)
         {
             try
             {
                 var tenants = await _tenantRepository.GetAllAsync();
-                return new Response
-                {
-                    ResponseCode = 0,
-                    ResponseDescription = "Tenants fetched successfully.",
-                    ResponseDatas = tenants
-                };
+                return ResponseHelper.Success(logId, tenants, "Teanats Retrieved Successfully");
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error while fetching tenants.");
-                return new Response
-                {
-                    ResponseCode = 500,
-                    ResponseDescription = "Internal server error."
-                };
+            return ResponseHelper.ServerError(logId);
             }
         }
 

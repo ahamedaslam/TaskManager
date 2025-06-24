@@ -6,13 +6,14 @@ namespace TaskManager.Helper
     public static class ResponseHelper
     {
        // Non-generic success
-        public static Response Success(object? data = null, string message = "Request completed successfully.")
+        public static Response Success(string?logId = null, object? data = null, string message = "Request completed successfully.")
         {
+            var fullMessage = logId != null ? $"Log ID: [{logId}] {message}" : message;
             return new Response
             {
                 ResponseCode = 0,
                 ResponseDescription = message,
-                ResponseDatas = data
+                ResponseDatas = fullMessage
             };
         }
 
