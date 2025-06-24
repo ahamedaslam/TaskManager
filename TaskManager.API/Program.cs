@@ -24,12 +24,13 @@ var builder = WebApplication.CreateBuilder(args);
 #region ================== Serilog Configuration ==================
 Log.Logger = new LoggerConfiguration()
     .WriteTo.Console()
-    .WriteTo.File("Logs/TaskManager.txt", rollingInterval: RollingInterval.Day)
+    //.WriteTo.File("Logs/TaskManager.txt", rollingInterval: RollingInterval.Day)
     .Enrich.FromLogContext()
     .MinimumLevel.Information()
     .CreateLogger();
 
 builder.Host.UseSerilog();
+builder.Logging.ClearProviders();
 #endregion
 
 #region ================== Service Registrations ==================
@@ -189,8 +190,10 @@ app.UseStatusCodePages(async context =>
         await response.WriteAsync(result);
 });
 
+
+
 // Request pipeline
-app.UseHttpsRedirection();
+//app.UseHttpsRedirection();
 
 app.UseAuthentication(); // Validates JWT
 app.UseAuthorization();  // Applies role policies, [Authorize]
@@ -204,4 +207,4 @@ app.MapControllers();
 app.Run();
 
 // Optional: Remove all default logging providers
-builder.Logging.ClearProviders();
+
