@@ -62,7 +62,7 @@ namespace TaskManager.Services
 
 
                 _logger.LogInformation("[GetAllTasksAsync] Successfully fetched {Count} tasks for UserId: {UserId}", tasks.Count(), request.UserId);
-                return ResponseHelper.Success(tasks,"Tasks Fetched Successfully.");
+                return ResponseHelper.Success(logId,tasks,"Tasks Fetched Successfully.");
             }
             catch (Exception ex)
             {
@@ -126,7 +126,7 @@ namespace TaskManager.Services
                 var createdTask = await _repo.CreateTaskAsync(taskItem, tenantId);
 
                 _logger.LogInformation("[CreateTaskAsync] Task created for UserId: {UserId}, logId: {logId}", request.UserId, logId);
-                return ResponseHelper.Success(createdTask, "Task created successfully.");
+                return ResponseHelper.Success(logId,createdTask, "Task created successfully.");
             }
             catch (Exception ex)
             {
@@ -153,7 +153,7 @@ namespace TaskManager.Services
                 }
 
                 _logger.LogInformation("[UpdateTaskAsync] Task updated successfully. TaskId: {TaskId}, logId: {logId}", request.Id, logId);
-                return ResponseHelper.Success(result, "Task updated successfully.");
+                return ResponseHelper.Success(logId, result, "Task updated successfully.");
 
             }
             catch (Exception ex)
