@@ -22,6 +22,8 @@ namespace TaskManager.Controllers
         [HttpPost]
         public async Task<IActionResult> CreateTenant([FromBody] CreateTenantDTO request)
         {
+
+           
             _logger.LogInformation("Received request to create tenant with Name: {TenantName}", request.Name);
             var response = await _tenantService.CreateTenantAsync(request);
             _logger.LogInformation("CreateTenant response: {@Response}", response);

@@ -16,12 +16,12 @@ using TaskManager.Middleware;
 using TaskManager.Models;
 using TaskManager.Repository;
 using TaskManager.Services;
+using TaskManager.Services.Interfaces;
 using TaskManager.Utility;
 
 var builder = WebApplication.CreateBuilder(args);
 
-
-// Setup Serilog
+#region ================== Serilog Configuration ==================
 Log.Logger = new LoggerConfiguration()
     .WriteTo.Console()
     .WriteTo.File("Logs/TaskManager.txt", rollingInterval: RollingInterval.Day)
@@ -29,15 +29,14 @@ Log.Logger = new LoggerConfiguration()
     .MinimumLevel.Information()
     .CreateLogger();
 
-// Remove default logging providers and use only Serilog
 builder.Host.UseSerilog();
-// Add services to the container.
+#endregion
 
+#region ================== Service Registrations ==================
+
+// Controllers & Swagger
 builder.Services.AddControllers();
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
-
 builder.Services.AddSwaggerGen(options =>
 {
     options.SwaggerDoc("v1", new OpenApiInfo
@@ -47,11 +46,14 @@ builder.Services.AddSwaggerGen(options =>
         Description = "API for managing Task Manager"
     });
 
+    // JWT Auth in Swagger
     options.AddSecurityDefinition(JwtBearerDefaults.AuthenticationScheme, new OpenApiSecurityScheme
     {
         Name = "Authorization",
         In = ParameterLocation.Header,
-        Scheme = JwtBearerDefaults.AuthenticationScheme
+        Scheme = JwtBearerDefaults.AuthenticationScheme,
+        Type = SecuritySchemeType.Http,
+        BearerFormat = "JWT"
     });
 
     options.AddSecurityRequirement(new OpenApiSecurityRequirement
@@ -68,32 +70,33 @@ builder.Services.AddSwaggerGen(options =>
                 Name = JwtBearerDefaults.AuthenticationScheme,
                 In = ParameterLocation.Header
             },
-            new string[] {}
+            Array.Empty<string>()
         }
     });
 });
 
-// Register AutoMapper
+// AutoMapper
 builder.Services.AddAutoMapper(typeof(AutoMapperProfile));
 
-//Register Services and Interfaces
+// App Services
 builder.Services.AddScoped<TaskManagerService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
-builder.Services.AddScoped<ITenantService,TenantService>();
+builder.Services.AddScoped<ITenantService, TenantService>();
+builder.Services.AddScoped<IDashboardService, DashboardService>();
 builder.Services.AddScoped<CurrentUserService>();
 
-
-// Register Repoitories and Interfaces
+// Repository Services
 builder.Services.AddScoped<ITokenRepository, TokenRepository>();
-builder.Services.AddScoped<ITaskManagerRepo, TaskManagerRepo>();
-builder.Services.AddScoped<ITenantRepository,TenantRepository>();
+builder.Services.AddScoped<ITaskManagerRepo, TaskManagerRepository>();
+builder.Services.AddScoped<ITenantRepository, TenantRepository>();
+builder.Services.AddScoped<IDashboardRepository, DashboardRepository>();
 
-// Register AddHttpContextAccessor
+// Context
 builder.Services.AddHttpContextAccessor();
+#endregion
 
+#region ================== DBContext & Identity ==================
 
-
-// Register DBContext with SQL Server
 builder.Services.AddDbContext<AuthDBContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("TaskManagerAuthDB")));
 
@@ -101,8 +104,6 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>()
     .AddEntityFrameworkStores<AuthDBContext>()
     .AddDefaultTokenProviders();
 
-
-// Password Policy
 builder.Services.Configure<IdentityOptions>(options =>
 {
     options.Password.RequireDigit = false;
@@ -112,45 +113,64 @@ builder.Services.Configure<IdentityOptions>(options =>
     options.Password.RequireLowercase = false;
     options.Password.RequiredUniqueChars = 1;
 });
+#endregion
 
-// JWT Authentication
+#region ================== JWT Authentication ==================
+
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
     options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
 })
-
-    .AddJwtBearer(options =>
+.AddJwtBearer(options =>
+{
+    options.TokenValidationParameters = new TokenValidationParameters
     {
-        options.TokenValidationParameters = new TokenValidationParameters
-        {
-            RoleClaimType = "http://schemas.microsoft.com/ws/2008/06/identity/claims/role",
-            AuthenticationType = "Jwt",
-            ValidateIssuer = true,
-            ValidateAudience = true,
-            ValidateLifetime = true,
-            ValidateIssuerSigningKey = true,
-            ValidIssuer = builder.Configuration["Jwt:Issuer"],
-            ValidAudiences = new[] { builder.Configuration["Jwt:Audience"] },
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]))
-        };
-    });
+        RoleClaimType = "http://schemas.microsoft.com/ws/2008/06/identity/claims/role",
+        AuthenticationType = "Jwt",
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
+        ValidIssuer = builder.Configuration["Jwt:Issuer"],
+        ValidAudiences = new[] { builder.Configuration["Jwt:Audience"] },
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]))
+    };
 
+    // Customize 401 Unauthorized Response
+    options.Events = new JwtBearerEvents
+    {
+        OnChallenge = context =>
+        {
+            context.HandleResponse(); // Skip default behavior
+            context.Response.StatusCode = 401;
+            context.Response.ContentType = "application/json";
+
+            var response = ResponseHelper.Unauthorized();
+            var json = JsonSerializer.Serialize(response);
+
+            return context.Response.WriteAsync(json);
+        }
+    };
+});
+#endregion
+
+#region ================== App Build & Middleware ==================
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+// Use Swagger only in development
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
-// Custom error handling middleware
-app.UseMiddleware<ExceptionHandleMiddleware>(); // Custom exception handling (top level)
+// Custom Global Exception Handler Middleware
+app.UseMiddleware<ExceptionHandleMiddleware>();
 
-
-app.UseStatusCodePages(async context =>        // Handles known status codes like 400/403/404
+// Handle known HTTP status codes (e.g. 400, 403, 404)
+app.UseStatusCodePages(async context =>
 {
     var response = context.HttpContext.Response;
     response.ContentType = "application/json";
@@ -166,21 +186,22 @@ app.UseStatusCodePages(async context =>        // Handles known status codes lik
     };
 
     if (result != null)
-    {
         await response.WriteAsync(result);
-    }
 });
 
-app.UseHttpsRedirection(); // Enforces HTTPS
+// Request pipeline
+app.UseHttpsRedirection();
 
-app.UseAuthentication(); // ? FIRST: Authenticate the user (sets the User principal)
+app.UseAuthentication(); // Validates JWT
+app.UseAuthorization();  // Applies role policies, [Authorize]
 
-//app.UseMiddleware<TaskManager.Middleware.CustomAuthorizationMiddleware>(); // Custom handling for 401/403
+// Maps controller routes
+app.MapControllers();
 
-app.UseAuthorization(); // ? THEN: Apply role-based policies or [Authorize] checks
+#endregion
 
-app.MapControllers(); // Route the request to the controller
-
+// Run the application
 app.Run();
 
+// Optional: Remove all default logging providers
 builder.Logging.ClearProviders();

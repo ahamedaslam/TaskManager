@@ -1,4 +1,4 @@
-﻿namespace TaskManager.Models
+﻿namespace TaskManager.Models.Response
 {
     public class Response
     {

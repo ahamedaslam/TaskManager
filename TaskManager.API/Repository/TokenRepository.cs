@@ -26,7 +26,8 @@ namespace TaskManager.Repository
             // Initialize claims
             var claims = new List<Claim>
             {
-                new Claim(ClaimTypes.Email, user.Email ?? string.Empty)
+                new Claim(ClaimTypes.Email, user.Email ?? string.Empty),
+                new Claim(ClaimTypes.NameIdentifier, user.Id),
             };
 
             // Add TenantId if the user is of type ApplicationUser

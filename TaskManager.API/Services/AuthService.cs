@@ -18,11 +18,7 @@ public class AuthService : IAuthService
     private readonly AuthDBContext _context;
     private readonly IMapper _mapper; // Assuming you have a mapper for DTO to Entity conversion
 
-    public AuthService(
-        UserManager<ApplicationUser> userManager,
-        ITokenRepository tokenRepository,
-        ILogger<AuthService> logger,
-        AuthDBContext context,IMapper mapper)
+    public AuthService(UserManager<ApplicationUser> userManager,ITokenRepository tokenRepository,ILogger<AuthService> logger,AuthDBContext context,IMapper mapper)
     {
         _userManager = userManager;
         _tokenRepository = tokenRepository;
@@ -44,7 +40,7 @@ public class AuthService : IAuthService
             var tenantExists = await _context.Tenants.AnyAsync(t => t.Id == tenantId);
             if (!tenantExists)
             {
-               return ResponseHelper.BadRequest("Invalid TenantId provided.");
+               return ResponseHelper.BadRequest(logId,"Invalid TenantId provided.");
             }
 
             // Create User
@@ -68,19 +64,19 @@ public class AuthService : IAuthService
                     }
                 }
 
-                return  ResponseHelper.Success("User registered successfully..!!");
+                return  ResponseHelper.Success(logId,"User registered successfully..!!");
             }
             else
             {
                 var errorDetails = string.Join(", ", identityResult.Errors.Select(e => e.Description));
-                return ResponseHelper.BadRequest($"User registration failed: {errorDetails}");
+                return ResponseHelper.BadRequest(logId, $"User registration failed: {errorDetails}");
             }
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "[{logId}] Error during user registration", logId);
 
-           return ResponseHelper.ServerError();
+           return ResponseHelper.ServerError(logId);
         }
     }
 
@@ -97,7 +93,7 @@ public class AuthService : IAuthService
 
             if (identityUser == null)
             {
-             return ResponseHelper.NotFound("User not found");
+             return ResponseHelper.NotFound(logId,"User not found");
             }
 
             var isPasswordValid = await _userManager.CheckPasswordAsync(identityUser, req.Password);
@@ -133,7 +129,7 @@ public class AuthService : IAuthService
         {
             _logger.LogError(ex, "[{logId}] Unexpected error during login", logId);
 
-           return ResponseHelper.ServerError();
+           return ResponseHelper.ServerError(logId);
         }
     }
 }

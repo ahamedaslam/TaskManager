@@ -2,103 +2,141 @@
 using Microsoft.AspNetCore.Mvc;
 using TaskManager.DTOs.TaskManager;
 using TaskManager.Helper;
-using TaskManager.Models;
+using TaskManager.Models.Response;
 using TaskManager.Services;
 
-namespace TaskManager.Controllers
+[ApiController]
+[Route("api/[controller]")]
+public class TaskManagerController : ControllerBase
 {
+    private readonly TaskManagerService _taskManagerService;
+    private readonly ILogger<TaskManagerController> _logger;
 
-    [ApiController] 
-    [Route("api/[controller]")]
-
-    //•	If your application supports multiple authentication schemes (e.g., cookies, API keys, Bearer tokens), this attribute restricts access to only Bearer-authenticated users.
-    public class TaskManagerController : ControllerBase
+    public TaskManagerController(TaskManagerService taskManagerService, ILogger<TaskManagerController> logger)
     {
-        private readonly TaskManagerService _taskManagerService;
-        private readonly ILogger<TaskManagerController> _logger;
-        //Role-Based Access Control (RBAC)
+        _taskManagerService = taskManagerService;
+        _logger = logger;
+    }
 
-        public TaskManagerController(TaskManagerService taskManagerService, ILogger<TaskManagerController> logger)
+    [Authorize(Roles = "Admin,Normal")]
+    [HttpPost("getTasks")]
+    public async Task<ActionResult<Response>> GetAllTasks(UserIdDto request, [FromQuery] string? filterOn,
+        [FromQuery] string? filterQuery, [FromQuery] string? sortBy, [FromQuery] bool? isAscending,
+        [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
+    {
+        string logId = Guid.NewGuid().ToString();
+        _logger.LogInformation("[GetAllTasks] RequestId: {logId}", logId);
+
+        try
         {
-            _taskManagerService = taskManagerService;
-            _logger = logger;
-        }
-
-        [Authorize(Roles = "Admin,Normal")]
-        [HttpPost("getTasks")]
-        public async Task<ActionResult<Response>> GetAllTasks(UserIdDto request, string tenantId,[FromQuery] string? filterOn,
-            [FromQuery] string? filterQuery, [FromQuery] string? sortBy, [FromQuery] bool? isAscending,
-            [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
-        {
-            _logger.LogInformation("[Controller] GetAllTasks called with UserId: {UserId}", request.UserId);
-
-            var response = await _taskManagerService.GetAllTasksAsync(request,tenantId, filterOn, filterQuery, sortBy, isAscending ?? true, pageNumber, pageSize);
-
+            var response = await _taskManagerService.GetAllTasksAsync(request, filterOn, filterQuery, sortBy, isAscending ?? true, pageNumber, pageSize, logId);
             return StatusCode(HttpStatusMapper.GetHttpStatusCode(response.ResponseCode), response);
         }
-
-        [Authorize(Roles = "Admin,Normal")]
-        [HttpPost("getById")]
-        public async Task<ActionResult<Response>> GetTaskById(TaskDto request)
+        catch (Exception ex)
         {
-            _logger.LogInformation("[Controller] GetTaskById called with TaskId: {TaskId}, UserId: {UserId}", request.taskId, request.userId);
+            _logger.LogError(ex, "[GetAllTasks] Unexpected error occurred. RequestId: {logId}", logId);
+            return StatusCode(500, ResponseHelper.ServerError($"Request failed. Log ID: {logId}"));
+        }
+    }
 
-            var response = await _taskManagerService.GetTaskByIdAsync(request,request.tenantId);
+    [Authorize(Roles = "Admin,Normal")]
+    [HttpPost("getById")]
+    public async Task<ActionResult<Response>> GetTaskById(TaskDto request)
+    {
+        string logId = Guid.NewGuid().ToString();
+        _logger.LogInformation("[GetTaskById] RequestId: {logId}", logId);
 
+        try
+        {
+            var response = await _taskManagerService.GetTaskByIdAsync(request, logId);
             return StatusCode(HttpStatusMapper.GetHttpStatusCode(response.ResponseCode), response);
         }
-
-        [Authorize(Roles = "Admin")]
-        [HttpPost("create")]
-        public async Task<ActionResult<Response>> CreateTask(TaskItemDTO request)
+        catch (Exception ex)
         {
-            _logger.LogInformation("The role is: {Role}", User.IsInRole("ADMIN") ? "ADMIN" : "NORMAL");
-            _logger.LogInformation("[Controller] CreateTask called for UserId: {UserId}, Title: {Title}", request.UserId, request.Title);
+            _logger.LogError(ex, "[GetTaskById] Unexpected error occurred. RequestId: {logId}", logId);
+            return StatusCode(500, ResponseHelper.ServerError($"Request failed. Log ID: {logId}"));
+        }
+    }
 
-            var response = await _taskManagerService.CreateTaskAsync(request,request.TenantId);
+    [Authorize(Roles = "Admin")]
+    [HttpPost("create")]
+    public async Task<ActionResult<Response>> CreateTask(AddTaskItmDTO request)
+    {
+        string logId = Guid.NewGuid().ToString();
+        _logger.LogInformation("[CreateTask] RequestId: {logId} | UserId: {UserId} | Title: {Title}", logId, request.UserId, request.Title);
 
+        try
+        {
+            var response = await _taskManagerService.CreateTaskAsync(request, logId);
             return StatusCode(HttpStatusMapper.GetHttpStatusCode(response.ResponseCode), response);
         }
-
-        [Authorize(Roles = "Admin")]
-        [HttpDelete("delete")]
-        public async Task<ActionResult<Response>> DeleteTask(TaskDto request)
+        catch (Exception ex)
         {
-            _logger.LogInformation("[Controller] DeleteTask called for TaskId: {TaskId}, UserId: {UserId}", request.taskId, request.userId);
+            _logger.LogError(ex, "[CreateTask] Unexpected error occurred. RequestId: {logId}", logId);
+            return StatusCode(500, ResponseHelper.ServerError($"Request failed. Log ID: {logId}"));
+        }
+    }
 
-            var response = await _taskManagerService.DeleteTaskAsync(request,request.tenantId);
+    [Authorize(Roles = "Admin")]
+    [HttpDelete("delete")]
+    public async Task<ActionResult<Response>> DeleteTask(TaskDto request)
+    {
+        string logId = Guid.NewGuid().ToString();
+        _logger.LogInformation("[DeleteTask] RequestId: {logId} | TaskId: {TaskId}, UserId: {UserId}", logId, request.taskId, request.userId);
 
+        try
+        {
+            var response = await _taskManagerService.DeleteTaskAsync(request,logId);
             return StatusCode(HttpStatusMapper.GetHttpStatusCode(response.ResponseCode), response);
         }
-
-        [Authorize(Roles = "Admin")]
-        [HttpPut("update")]
-        public async Task<ActionResult<Response>> UpdateTask(TaskItemDTO request)
+        catch (Exception ex)
         {
-            _logger.LogInformation("[Controller] UpdateTask called for TaskId: {TaskId}", request.Id);
+            _logger.LogError(ex, "[DeleteTask] Unexpected error occurred. RequestId: {logId}", logId);
+            return StatusCode(500, ResponseHelper.ServerError($"Request failed. Log ID: {logId}"));
+        }
+    }
 
+    [Authorize(Roles = "Admin")]
+    [HttpPut("update")]
+    public async Task<ActionResult<Response>> UpdateTask(TaskItemDTO request)
+    {
+        string logId = Guid.NewGuid().ToString();
+        _logger.LogInformation("[UpdateTask] RequestId: {logId} | TaskId: {TaskId}", logId, request?.Id);
+
+        try
+        {
             if (request == null)
             {
-                _logger.LogWarning("[Controller] Task update failed: null request");
-                return BadRequest(new Response { ResponseCode = 400, ResponseDescription = "Invalid request." });
+                _logger.LogWarning("[UpdateTask] Null request. RequestId: {logId}", logId);
+                return BadRequest(ResponseHelper.BadRequest("Invalid request."));
             }
 
-            var response = await _taskManagerService.UpdateTaskAsync(request, request.TenantId);
-
+            var response = await _taskManagerService.UpdateTaskAsync(request, logId);
             return StatusCode(HttpStatusMapper.GetHttpStatusCode(response.ResponseCode), response);
         }
-
-        [Authorize(Roles = "Admin,Normal")]
-        [HttpPatch("setTaskCompletionStatus")]
-        public async Task<ActionResult<Response>> SetTaskCompletionStatus(Guid taskId, string userId, [FromQuery] bool isCompleted, string tenantId)
+        catch (Exception ex)
         {
-            _logger.LogInformation("[Controller] SetTaskCompletionStatus called for TaskId: {TaskId}, IsCompleted: {IsCompleted}", taskId, isCompleted);
+            _logger.LogError(ex, "[UpdateTask] Unexpected error occurred. RequestId: {logId}", logId);
+            return StatusCode(500, ResponseHelper.ServerError($"Request failed. Log ID: {logId}"));
+        }
+    }
 
-            var response = await _taskManagerService.SetTaskCompletionStatusAsync(taskId, userId, isCompleted,tenantId);
+    [Authorize(Roles = "Admin,Normal")]
+    [HttpPatch("setTaskCompletionStatus")]
+    public async Task<ActionResult<Response>> SetTaskCompletionStatus(Guid taskId, string userId, [FromQuery] bool isCompleted)
+    {
+        string logId = Guid.NewGuid().ToString();
+        _logger.LogInformation("[SetTaskCompletionStatus] RequestId: {logId} | TaskId: {TaskId}, IsCompleted: {IsCompleted}", logId, taskId, isCompleted);
 
+        try
+        {
+            var response = await _taskManagerService.SetTaskCompletionStatusAsync(taskId, userId, isCompleted,logId);
             return StatusCode(HttpStatusMapper.GetHttpStatusCode(response.ResponseCode), response);
         }
-
-
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "[SetTaskCompletionStatus] Unexpected error occurred. RequestId: {logId}", logId);
+            return StatusCode(500, ResponseHelper.ServerError($"Request failed. Log ID: {logId}"));
+        }
     }
 }

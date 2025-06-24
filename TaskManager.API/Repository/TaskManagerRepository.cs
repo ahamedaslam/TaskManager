@@ -6,12 +6,13 @@ using TaskManager.Models;
 
 namespace TaskManager.Repository
 {
-    public class TaskManagerRepo : ITaskManagerRepo
+    //Authorization: Bearer <token>.
+    public class TaskManagerRepository : ITaskManagerRepo
     {
         private readonly AuthDBContext _appDbContext; // Inject DI
-        private readonly ILogger<TaskManagerRepo> _logger; // Inject logger
+        private readonly ILogger<TaskManagerRepository> _logger; // Inject logger
 
-        public TaskManagerRepo(AuthDBContext appDbContext, ILogger<TaskManagerRepo> logger)
+        public TaskManagerRepository(AuthDBContext appDbContext, ILogger<TaskManagerRepository> logger)
         {
             _appDbContext = appDbContext ?? throw new ArgumentNullException(nameof(appDbContext));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -165,9 +166,11 @@ namespace TaskManager.Repository
             return true;
         }
 
-        public async Task<TaskItem> UpdateTaskAsync(TaskItemDTO taskItem,string tenantId)
+        public async Task<TaskItem> UpdateTaskAsync(TaskItemDTO taskItem, string tenantId)
         {
-            var existingTask = await _appDbContext.TaskItems.FirstOrDefaultAsync(t => t.Id == taskItem.Id && t.UserId == taskItem.UserId && t.TenantId == taskItem.TenantId);
+            // Correcting the lambda expression to use equality comparison (==) instead of assignment (=)
+            var existingTask = await _appDbContext.TaskItems.FirstOrDefaultAsync(t => t.Id == taskItem.Id && t.UserId == taskItem.UserId && t.TenantId == tenantId);
+
             if (existingTask == null)
             {
                 return null;

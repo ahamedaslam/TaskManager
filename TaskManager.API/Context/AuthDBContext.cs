@@ -21,7 +21,7 @@ namespace TaskManager.DBContext
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);
-
+                    
             builder.Entity<ApplicationUser>()
                 .HasOne(u => u.Tenant)
                 .WithMany()

@@ -1,13 +1,7 @@
-﻿using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using System.Text.Json;
-using TaskManager.DBContext;
+﻿using Microsoft.AspNetCore.Mvc;
 using TaskManager.DTOs.Auth;
 using TaskManager.Helper;
 using TaskManager.InterfaceService;
-using TaskManager.IRepository;
-using TaskManager.Models.Response;
 
 
 namespace TaskManager.Controllers

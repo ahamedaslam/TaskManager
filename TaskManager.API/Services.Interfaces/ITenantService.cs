@@ -1,5 +1,5 @@
 ﻿using TaskManager.DTOs.TaskManager;
-using TaskManager.Models;
+using TaskManager.Models.Response;
 
 namespace TaskManager.IServices
 {

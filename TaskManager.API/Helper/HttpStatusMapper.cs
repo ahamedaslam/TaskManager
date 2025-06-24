@@ -1,6 +1,6 @@
 ﻿namespace TaskManager.Helper
 {
-    public static class HttpStatusMapper
+    public static class HttpStatusMapper  //cant able to create object of this class, so making it static
     {
         public static int GetHttpStatusCode(int responseCode)
         {
