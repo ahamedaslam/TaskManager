@@ -3,6 +3,22 @@
 ##
 ## Get latest from https://github.com/github/gitignore/blob/master/VisualStudio.gitignore
 
+# Ignore environment variables
+.env
+
+# Ignore build and publish outputs
+bin/
+obj/
+
+# Ignore user-specific files
+.vscode/
+*.user
+*.suo
+
+# Ignore logs and temp
+*.log
+*.tmp
+
 # User-specific files
 *.rsuser
 *.suo
