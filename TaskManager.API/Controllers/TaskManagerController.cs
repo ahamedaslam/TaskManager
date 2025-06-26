@@ -48,6 +48,12 @@ public class TaskManagerController : ControllerBase
 
         try
         {
+            if (request == null || request.taskId == Guid.Empty)
+            {
+                _logger.LogWarning("[{logId}] Null or invalid request.", logId);
+                return BadRequest(ResponseHelper.BadRequest("Invalid request."));
+            }
+            _logger.LogDebug("Entering GetTaskById with TaskId: {TaskId}, UserId: {UserId}", request.taskId, request.userId);
             var response = await _taskManagerService.GetTaskByIdAsync(request, logId);
             return StatusCode(HttpStatusMapper.GetHttpStatusCode(response.ResponseCode), response);
         }
@@ -67,6 +73,12 @@ public class TaskManagerController : ControllerBase
 
         try
         {
+            if (request == null)
+            {
+                _logger.LogWarning("[{logId}] Null request.", logId);
+                return BadRequest(ResponseHelper.BadRequest("Invalid request."));
+            }
+            _logger.LogDebug("Entering CreateTask with UserId: {UserId}, Title: {Title}", request.UserId, request.Title);
             var response = await _taskManagerService.CreateTaskAsync(request, logId);
             return StatusCode(HttpStatusMapper.GetHttpStatusCode(response.ResponseCode), response);
         }
@@ -86,6 +98,12 @@ public class TaskManagerController : ControllerBase
 
         try
         {
+            if (request == null || request.taskId == Guid.Empty)
+            {
+                _logger.LogWarning("[{logId}] Null or invalid request.", logId);
+                return BadRequest(ResponseHelper.BadRequest("Invalid request."));
+            }
+            _logger.LogDebug("Entering DeleteTask with TaskId: {TaskId}, UserId: {UserId}", request.taskId, request.userId);
             var response = await _taskManagerService.DeleteTaskAsync(request,logId);
             return StatusCode(HttpStatusMapper.GetHttpStatusCode(response.ResponseCode), response);
         }
@@ -101,7 +119,7 @@ public class TaskManagerController : ControllerBase
     public async Task<ActionResult<Response>> UpdateTask(TaskItemDTO request)
     {
         string logId = Guid.NewGuid().ToString();
-        _logger.LogInformation("[UpdateTask] RequestId: {logId} | TaskId: {TaskId}", logId, request?.Id);
+        _logger.LogInformation("[UpdateTask] RequestId: {logId} | TaskId: {TaskId}", logId, request.Id);
 
         try
         {
@@ -110,7 +128,7 @@ public class TaskManagerController : ControllerBase
                 _logger.LogWarning("[UpdateTask] Null request. RequestId: {logId}", logId);
                 return BadRequest(ResponseHelper.BadRequest("Invalid request."));
             }
-
+            _logger.LogDebug("Entering UpdateTask with TaskId: {TaskId}", request.Id);
             var response = await _taskManagerService.UpdateTaskAsync(request, logId);
             return StatusCode(HttpStatusMapper.GetHttpStatusCode(response.ResponseCode), response);
         }
@@ -130,6 +148,12 @@ public class TaskManagerController : ControllerBase
 
         try
         {
+            if (taskId == Guid.Empty || string.IsNullOrEmpty(userId))
+            {
+                _logger.LogWarning("[SetTaskCompletionStatus] Null or invalid request. RequestId: {logId}", logId);
+                return BadRequest(ResponseHelper.BadRequest("Invalid request."));
+            }
+            _logger.LogDebug("Entering SetTaskCompletionStatus with TaskId: {TaskId}, UserId: {UserId}, IsCompleted: {IsCompleted}", taskId, userId, isCompleted);
             var response = await _taskManagerService.SetTaskCompletionStatusAsync(taskId, userId, isCompleted,logId);
             return StatusCode(HttpStatusMapper.GetHttpStatusCode(response.ResponseCode), response);
         }

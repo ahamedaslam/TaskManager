@@ -26,6 +26,12 @@ namespace TaskManager.Controllers
             try
             {
                 _logger.LogInformation("[{logId}] Received request to create tenant with Name: {TenantName}", logId,request.Name);
+                if (request == null || string.IsNullOrWhiteSpace(request.Name))
+                {
+                    _logger.LogWarning("[{logId}] Invalid request: {Request}", logId, request);
+                    return BadRequest(ResponseHelper.BadRequest("Invalid request data."));
+                }
+                _logger.LogDebug("[{logId}] Creating tenant with Name: {TenantName}", logId, request.Name);
                 var response = await _tenantService.CreateTenantAsync(request,logId);
                 _logger.LogInformation("[{logId}] result CreateTenant response: {@Response}",logId,response);
                 return StatusCode(HttpStatusMapper.GetHttpStatusCode(response.ResponseCode), response);

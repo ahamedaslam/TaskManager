@@ -6,14 +6,14 @@ namespace TaskManager.Helper
     public static class ResponseHelper
     {
        // Non-generic success
-        public static Response Success(string?logId = null, object? data = null, string message = "Request completed successfully.")
+        public static Response Success(object? data = null, string message = "Request completed successfully.")
         {
-            var fullMessage = logId != null ? $"Log ID: [{logId}] {message}" : message;
+            //var fullMessage = logId != null ? $"Log ID: [{logId}] {message}" : message;
             return new Response
             {
                 ResponseCode = 0,
                 ResponseDescription = message,
-                ResponseDatas = fullMessage
+                ResponseDatas = data
             };
         }
 
@@ -29,14 +29,13 @@ namespace TaskManager.Helper
         }
 
         ////  Non-generic bad request
-        public static Response BadRequest(string?logId = null, string message = "Oops! Something seems off with your request. Please check and try again.")
+        public static Response BadRequest(string message = "Oops! Something seems off with your request. Please check and try again.")
         {
-            var fullMessage = logId != null ? $"Log ID: [{logId}] {message}" : message;
            
             return new Response
             {
                 ResponseCode = 1001,
-                ResponseDescription = fullMessage
+                ResponseDescription = message
             };
         }
 
@@ -50,13 +49,13 @@ namespace TaskManager.Helper
         //    };
         //}
 
-        public static Response Unauthorized(string?logId = null, string message = "Access denied..!!")
+        public static Response Unauthorized(string message = "Access denied..!!")
         {
-            var fullMessage = logId != null ? $"Log ID: [{logId}] {message}" : message;
+
             return new Response
             {
                 ResponseCode = 1002,
-                ResponseDescription = fullMessage
+                ResponseDescription = message
             };
         }
 
@@ -70,13 +69,12 @@ namespace TaskManager.Helper
         //}
 
         //It creates a string called fullMessage that either includes a log ID (if provided) or just the message.
-        public static Response NotFound(string?logId = null, string message = "We couldn’t find what you’re looking for.")
+        public static Response NotFound(string message = "We couldn’t find what you’re looking for.")
         {// shorthand for an if-else statement.
-            var fullMessage = logId != null ? $"Log ID: [{logId}] {message}" : message; //ternary operator to check if logId is not null
             return new Response
             {
                 ResponseCode = 1003,
-                ResponseDescription = fullMessage
+                ResponseDescription = message
             };
         }
 
@@ -144,16 +142,15 @@ namespace TaskManager.Helper
         //    };
         //}
 
-        public static Response ServerError(string? logId = null, string message = "Something went wrong on our end. Please try again later.")
+        public static Response ServerError(string message = "Something went wrong on our end. Please try again later.")
         {
             //It creates a string called fullMessage that either includes a log ID (if provided) or just the message
 
-            var fullMessage = logId != null ? $"Log ID: [{logId}] {message}" : message;
 
             return new Response
             {
                 ResponseCode = 1006,
-                ResponseDescription = fullMessage
+                ResponseDescription = message
             };
         }
 

@@ -23,10 +23,8 @@ var builder = WebApplication.CreateBuilder(args);
 
 #region ================== Serilog Configuration ==================
 Log.Logger = new LoggerConfiguration()
-    .WriteTo.Console()
-    //.WriteTo.File("Logs/TaskManager.txt", rollingInterval: RollingInterval.Day)
+    .ReadFrom.Configuration(builder.Configuration) // Reads from appsettings.json
     .Enrich.FromLogContext()
-    .MinimumLevel.Information()
     .CreateLogger();
 
 builder.Host.UseSerilog();

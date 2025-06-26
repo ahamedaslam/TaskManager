@@ -30,7 +30,7 @@ public class AuthService : IAuthService
 
     public async Task<Response> RegisterUserAsync(RegisterRequestDTO registerRequestDTO,string logId)
     {
-        _logger.LogInformation("[{logId}] Initiating registration for {Username}", logId,registerRequestDTO.Username);
+        _logger.LogInformation("[{logId}] Initiating registration for User - {Username}", logId,registerRequestDTO.Username);
 
         try
         {
@@ -40,7 +40,7 @@ public class AuthService : IAuthService
             var tenantExists = await _context.Tenants.AnyAsync(t => t.Id == tenantId);
             if (!tenantExists)
             {
-               return ResponseHelper.BadRequest(logId,"Invalid TenantId provided.");
+               return ResponseHelper.BadRequest("Invalid TenantId provided.");
             }
 
             // Create User
@@ -64,19 +64,21 @@ public class AuthService : IAuthService
                     }
                 }
 
-                return  ResponseHelper.Success(logId,"User registered successfully..!!");
+               // _logger.LogInformation("[{logId}] User {Username} registered successfully with TenantId: {TenantId}", logId, registerRequestDTO.Username, tenantId);
+                return  ResponseHelper.Success("User registered successfully..!!");
             }
             else
             {
-                var errorDetails = string.Join(", ", identityResult.Errors.Select(e => e.Description));
-                return ResponseHelper.BadRequest(logId, $"User registration failed: {errorDetails}");
+               // var errorDetails = string.Join(", ", identityResult.Errors.Select(e => e.Description));
+                _logger.LogWarning("[{logId}] User registration failed for {Username} with errors: {Errors}", logId, registerRequestDTO.Username, string.Join(", ", identityResult.Errors.Select(e => e.Description)));
+                return ResponseHelper.BadRequest("User registration failed");
             }
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "[{logId}] Error during user registration", logId);
 
-           return ResponseHelper.ServerError(logId);
+           return ResponseHelper.ServerError();
         }
     }
 
@@ -89,16 +91,19 @@ public class AuthService : IAuthService
 
         try
         {
+            _logger.LogInformation("[{logId}] Searching for user with email {Email}", logId, req.Username);
             var identityUser = await _userManager.FindByEmailAsync(req.Username);
 
             if (identityUser == null)
             {
-             return ResponseHelper.NotFound(logId,"User not found");
+                _logger.LogWarning("[{logId}] User not found with email {Email}", logId, req.Username);
+                return ResponseHelper.NotFound("User not found");
             }
 
             var isPasswordValid = await _userManager.CheckPasswordAsync(identityUser, req.Password);
             if (!isPasswordValid)
             {
+                _logger.LogWarning("[{logId}] Invalid password attempt for user {Username}", logId, req.Username);
                 return ResponseHelper.Unauthorized("Invalid password");
             }
 
@@ -122,14 +127,17 @@ public class AuthService : IAuthService
                         Roles = roles,
                         TenantId = identityUser.TenantId
                     }
+
                 }
+
             };
+
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "[{logId}] Unexpected error during login", logId);
 
-           return ResponseHelper.ServerError(logId);
+           return ResponseHelper.ServerError();
         }
     }
 }

@@ -3,7 +3,7 @@ using TaskManager.DTOs.Auth;
 using TaskManager.Helper;
 using TaskManager.InterfaceService;
 
-
+//testing
 namespace TaskManager.Controllers
 {
     [Route("api/[controller]")]
@@ -27,8 +27,14 @@ namespace TaskManager.Controllers
 
             try
             {
+                if (dto == null || string.IsNullOrWhiteSpace(dto.Username) || string.IsNullOrWhiteSpace(dto.Password))
+                {
+                    _logger.LogWarning("[{logId}] Invalid registration request: {Request}", logId, dto);
+                    return BadRequest(ResponseHelper.BadRequest("Invalid registration data."));
+                }
+                _logger.LogDebug("[{logId}] Entering RegisterUserAsync with Username: {Username}, TenantId: {TenantId}", logId, dto.Username, dto.TenantId);
                 var response = await _authService.RegisterUserAsync(dto,logId);
-                _logger.LogInformation("[{logId}] User registration completed for Username: {Username} with ResponseCode: {ResponseCode}",logId, dto.Username, response.ResponseCode);
+                //_logger.LogInformation("[{logId}] User registration completed for Username: {Username} with ResponseCode: {ResponseCode}",logId, dto.Username, response.ResponseCode);
                 return StatusCode(HttpStatusMapper.GetHttpStatusCode(response.ResponseCode), response);
             }
             catch (Exception ex)
@@ -49,9 +55,15 @@ namespace TaskManager.Controllers
             _logger.LogInformation("[{logId}] Login attempt with Username: {Username}", logId,dto.Username);
             try
             {
+                if (dto == null || string.IsNullOrWhiteSpace(dto.Username) || string.IsNullOrWhiteSpace(dto.Password))
+                {
+                    _logger.LogWarning("[{logId}] Invalid login request: {Request}", logId, dto);
+                    return BadRequest(ResponseHelper.BadRequest("Invalid login data."));
+                }
+                _logger.LogDebug("[{logId}] Entering LoginUserAsync with Username: {Username}", logId, dto.Username);
                 var response = await _authService.LoginUserAsync(dto,logId);
-                _logger.LogInformation("[{logId}] Login Successfull for Username: {Username} with ResponseCode: {ResponseCode}",logId, dto.Username, response.ResponseCode);
                 return Ok(response);
+
             }
             catch (Exception ex)
             {
