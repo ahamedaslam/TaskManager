@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using TaskManager.DBContext;
 using TaskManager.DTOs.Auth;
 using TaskManager.Helper;
+using TaskManager.Interface;
 using TaskManager.InterfaceService;
 using TaskManager.IRepository;
 using TaskManager.Models;
@@ -17,14 +18,16 @@ public class AuthService : IAuthService
     private readonly ILogger<AuthService> _logger;
     private readonly AuthDBContext _context;
     private readonly IMapper _mapper; // Assuming you have a mapper for DTO to Entity conversion
+    private readonly IRefreshTokenRepository _refreshTokenRepository;
 
-    public AuthService(UserManager<ApplicationUser> userManager,ITokenRepository tokenRepository,ILogger<AuthService> logger,AuthDBContext context,IMapper mapper)
+    public AuthService(UserManager<ApplicationUser> userManager,ITokenRepository tokenRepository,ILogger<AuthService> logger,AuthDBContext context,IMapper mapper,IRefreshTokenRepository refreshTokenRepository)
     {
         _userManager = userManager;
         _tokenRepository = tokenRepository;
         _logger = logger;
         _context = context;
         _mapper = mapper;
+        _refreshTokenRepository = refreshTokenRepository;
 
     }
 
@@ -82,12 +85,11 @@ public class AuthService : IAuthService
         }
     }
 
-    
 
-    public async Task<Response> LoginUserAsync(LoginRequestDTO req,string logId)
+
+    public async Task<Response> LoginUserAsync(LoginRequestDTO req, string logId)
     {
-
-        _logger.LogInformation("[{logId}] Starting login for user {Username}", logId,req.Username);
+        _logger.LogInformation("[{logId}] Starting login for user {Username}", logId, req.Username);
 
         try
         {
@@ -109,8 +111,11 @@ public class AuthService : IAuthService
 
             var roles = await _userManager.GetRolesAsync(identityUser);
             var jwtToken = _tokenRepository.CreateJwtToken(identityUser, roles.ToList());
-
             var expiry = DateTime.Now.AddMinutes(15);
+
+            // Generate refresh token
+            var refreshToken = await _refreshTokenRepository.GenerateAsync((ApplicationUser)identityUser);
+            _logger.LogInformation("[{logId}] Refresh token generated for user {UserId}", logId, identityUser.Id);
 
             return new Response
             {
@@ -118,7 +123,8 @@ public class AuthService : IAuthService
                 ResponseDescription = "Login successful.",
                 ResponseDatas = new
                 {
-                    Token = jwtToken,
+                    AccessToken = jwtToken,
+                    RefreshToken = refreshToken.Token,
                     ExpiresAt = expiry,
                     User = new
                     {
@@ -127,17 +133,14 @@ public class AuthService : IAuthService
                         Roles = roles,
                         TenantId = identityUser.TenantId
                     }
-
                 }
-
             };
-
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "[{logId}] Unexpected error during login", logId);
-
-           return ResponseHelper.ServerError();
+            return ResponseHelper.ServerError();
         }
     }
+
 }
