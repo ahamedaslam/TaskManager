@@ -22,10 +22,11 @@ namespace TaskManager.Services
         {
             try
             {
+                _logger.LogInformation("[{logId}] Received request to create tenant with Name: {TenantName}", logId, request.Name);
                 var exists = await _tenantRepository.ExistsAsync(request.Name);
                 if (exists)
                 {
-                    return ResponseHelper.BadRequest(logId, "Tenant with this name already exists.");
+                    return ResponseHelper.BadRequest("Tenant with this name already exists.");
                 }
 
                 var newTenant = new Tenant
@@ -36,12 +37,12 @@ namespace TaskManager.Services
                 };
                  
                 var result = await _tenantRepository.CreateAsync(newTenant);
-                return ResponseHelper.Success(logId,result,"Tenant created successfully.");
+                return ResponseHelper.Success(result,"Tenant created successfully.");
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "[{logId}] Error while creating tenant.",logId);
-             return ResponseHelper.ServerError(logId);
+             return ResponseHelper.ServerError();
             }
         }
 
@@ -50,12 +51,12 @@ namespace TaskManager.Services
             try
             {
                 var tenants = await _tenantRepository.GetAllAsync();
-                return ResponseHelper.Success(logId, tenants, "Teanats Retrieved Successfully");
+                return ResponseHelper.Success(tenants, "Teanats Retrieved Successfully");
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error while fetching tenants.");
-            return ResponseHelper.ServerError(logId);
+            return ResponseHelper.ServerError();
             }
         }
 

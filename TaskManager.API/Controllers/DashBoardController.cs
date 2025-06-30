@@ -35,7 +35,7 @@ namespace TaskManager.Controllers
                     _logger.LogWarning("[{LogId}] Missing TenantId in claims.", logId);
                     return Unauthorized(ResponseHelper.Unauthorized("TenantId not found in claims."));
                 }
-
+                _logger.LogDebug("[{LogId}] Entering GetDashboardStats with TenantId: {TenantId}", logId, tenantId);
                 var result = await _dashboardService.GetDashboardStatsAsync(tenantId,logId);
 
                 if (result == null)

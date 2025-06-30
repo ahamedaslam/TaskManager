@@ -23,10 +23,8 @@ var builder = WebApplication.CreateBuilder(args);
 
 #region ================== Serilog Configuration ==================
 Log.Logger = new LoggerConfiguration()
-    .WriteTo.Console()
-    //.WriteTo.File("Logs/TaskManager.txt", rollingInterval: RollingInterval.Day)
+    .ReadFrom.Configuration(builder.Configuration) // Reads from appsettings.json
     .Enrich.FromLogContext()
-    .MinimumLevel.Information()
     .CreateLogger();
 
 builder.Host.UseSerilog();
@@ -85,12 +83,14 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<ITenantService, TenantService>();
 builder.Services.AddScoped<IDashboardService, DashboardService>();
 builder.Services.AddScoped<CurrentUserService>();
+builder.Services.AddScoped<IRefreshTokenService, RefreshTokenService>();
 
 // Repository Services
 builder.Services.AddScoped<ITokenRepository, TokenRepository>();
 builder.Services.AddScoped<ITaskManagerRepo, TaskManagerRepository>();
 builder.Services.AddScoped<ITenantRepository, TenantRepository>();
 builder.Services.AddScoped<IDashboardRepository, DashboardRepository>();
+builder.Services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
 
 // Context
 builder.Services.AddHttpContextAccessor();
