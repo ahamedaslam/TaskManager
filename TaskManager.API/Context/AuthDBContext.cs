@@ -18,6 +18,8 @@ namespace TaskManager.DBContext
         public DbSet<TaskItem> TaskItems { get; set; }
         public DbSet<Tenant> Tenants { get; set; }
 
+        public DbSet<RefreshToken> RefreshTokens { get; set; }
+
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);
