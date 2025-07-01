@@ -19,8 +19,9 @@ public class AuthService : IAuthService
     private readonly AuthDBContext _context;
     private readonly IMapper _mapper; // Assuming you have a mapper for DTO to Entity conversion
     private readonly IRefreshTokenRepository _refreshTokenRepository;
+    private readonly IConfiguration _configuration;
 
-    public AuthService(UserManager<ApplicationUser> userManager,ITokenRepository tokenRepository,ILogger<AuthService> logger,AuthDBContext context,IMapper mapper,IRefreshTokenRepository refreshTokenRepository)
+    public AuthService(UserManager<ApplicationUser> userManager,ITokenRepository tokenRepository,ILogger<AuthService> logger,AuthDBContext context,IMapper mapper,IRefreshTokenRepository refreshTokenRepository,IConfiguration configuration)
     {
         _userManager = userManager;
         _tokenRepository = tokenRepository;
@@ -28,6 +29,7 @@ public class AuthService : IAuthService
         _context = context;
         _mapper = mapper;
         _refreshTokenRepository = refreshTokenRepository;
+        _configuration = configuration;
 
     }
 
@@ -111,7 +113,9 @@ public class AuthService : IAuthService
 
             var roles = await _userManager.GetRolesAsync(identityUser);
             var jwtToken = _tokenRepository.CreateJwtToken(identityUser, roles.ToList());
-            var expiry = DateTime.Now.AddMinutes(15);
+            var expiryMinutes = int.Parse(_configuration["JWT_ACCESS_TOKEN_EXPIRY_MINUTES"]);
+            var expiry = DateTime.Now.AddMinutes(expiryMinutes);
+
 
             // Generate refresh token
             var refreshToken = await _refreshTokenRepository.GenerateAsync((ApplicationUser)identityUser);

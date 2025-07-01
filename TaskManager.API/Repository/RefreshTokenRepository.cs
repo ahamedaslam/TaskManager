@@ -10,19 +10,23 @@ namespace TaskManager.Repository
     {
 
         private readonly AuthDBContext _context;
+        private readonly IConfiguration _configuration;    
 
-        public RefreshTokenRepository(AuthDBContext context)
+        public RefreshTokenRepository(AuthDBContext context, IConfiguration configuration)
         {
             _context = context;
+            _configuration = configuration;
         }
 
         public async Task<RefreshToken> GenerateAsync(ApplicationUser user)
         {
+            var expiryDays = int.Parse(_configuration["JWT_REFRESH_TOKEN_EXPIRY_DAYS"]);
+
             var refreshToken = new RefreshToken
             {
                 Token = GenerateSecureToken(),
                 UserId = user.Id,
-                Expires = DateTime.Now.AddDays(7),
+                Expires = DateTime.Now.AddDays(expiryDays),
                 CreatedAt = DateTime.Now
             };
 

@@ -31,6 +31,12 @@ builder.Host.UseSerilog();
 builder.Logging.ClearProviders();
 #endregion
 
+#region ================== Env Variables Config ==================
+DotNetEnv.Env.Load(); // Loads values from .env
+builder.Configuration.AddEnvironmentVariables();
+
+#endregion
+
 #region ================== Service Registrations ==================
 
 // Controllers & Swagger
@@ -99,7 +105,8 @@ builder.Services.AddHttpContextAccessor();
 #region ================== DBContext & Identity ==================
 
 builder.Services.AddDbContext<AuthDBContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("TaskManagerAuthDB")));
+    options.UseSqlServer(builder.Configuration["DB_CONNECTION_STRING"]
+    ));
 
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>()
     .AddEntityFrameworkStores<AuthDBContext>()
@@ -133,9 +140,9 @@ builder.Services.AddAuthentication(options =>
         ValidateAudience = true,
         ValidateLifetime = true,
         ValidateIssuerSigningKey = true,
-        ValidIssuer = builder.Configuration["Jwt:Issuer"],
-        ValidAudiences = new[] { builder.Configuration["Jwt:Audience"] },
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]))
+        ValidIssuer = builder.Configuration["JWT_ISSUER"],
+        ValidAudiences = new[] { builder.Configuration["JWT_AUDIENCE"] },
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["JWT_SECRET"]))
     };
 
     // Customize 401 Unauthorized Response
@@ -202,6 +209,7 @@ app.UseAuthorization();  // Applies role policies, [Authorize]
 app.MapControllers();
 
 #endregion
+
 
 // Run the application
 app.Run();
