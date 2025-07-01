@@ -43,15 +43,15 @@ namespace TaskManager.Repository
             }
 
             // Retrieve key and credentials from configuration
-            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]));
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["JWT_SECRET"]));
             var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
             // Build the token descriptor
             var tokenDescriptor = new JwtSecurityToken(
-                issuer: _configuration["Jwt:Issuer"],
-                audience: _configuration["Jwt:Audience"],
+                issuer: _configuration["JWT_ISSUER"],
+                audience: _configuration["JWT_AUDIENCE"],
                 claims: claims,
-                expires: DateTime.UtcNow.AddMinutes(15),
+                expires: DateTime.UtcNow.AddMinutes(int.Parse(_configuration["JWT_ACCESS_TOKEN_EXPIRY_MINUTES"])),
                 signingCredentials: credentials
             );
 
