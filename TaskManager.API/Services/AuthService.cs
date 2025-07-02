@@ -21,7 +21,7 @@ public class AuthService : IAuthService
     private readonly IRefreshTokenRepository _refreshTokenRepository;
     private readonly IConfiguration _configuration;
 
-    public AuthService(UserManager<ApplicationUser> userManager,ITokenRepository tokenRepository,ILogger<AuthService> logger,AuthDBContext context,IMapper mapper,IRefreshTokenRepository refreshTokenRepository,IConfiguration configuration)
+    public AuthService(UserManager<ApplicationUser> userManager,ITokenRepository tokenRepository,ILogger<AuthService> logger,AuthDBContext context,IMapper mapper, IRefreshTokenRepository refreshTokenRepository, IConfiguration configuration)
     {
         _userManager = userManager;
         _tokenRepository = tokenRepository;
@@ -115,11 +115,11 @@ public class AuthService : IAuthService
             var jwtToken = _tokenRepository.CreateJwtToken(identityUser, roles.ToList());
             var expiryMinutes = int.Parse(_configuration["JWT_ACCESS_TOKEN_EXPIRY_MINUTES"]);
             var expiry = DateTime.Now.AddMinutes(expiryMinutes);
-
-
+           
             // Generate refresh token
             var refreshToken = await _refreshTokenRepository.GenerateAsync((ApplicationUser)identityUser);
             _logger.LogInformation("[{logId}] Refresh token generated for user {UserId}", logId, identityUser.Id);
+
 
             return new Response
             {

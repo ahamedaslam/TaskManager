@@ -10,7 +10,7 @@ namespace TaskManager.Repository
     {
 
         private readonly AuthDBContext _context;
-        private readonly IConfiguration _configuration;    
+        private readonly IConfiguration _configuration;
 
         public RefreshTokenRepository(AuthDBContext context, IConfiguration configuration)
         {
