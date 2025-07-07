@@ -163,6 +163,20 @@ builder.Services.AddAuthentication(options =>
 });
 #endregion
 
+#region ================== Configure CORS ==================
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowFrontend",
+        policy =>
+        {
+            policy.WithOrigins("http://localhost:4200") // Angular dev server
+                  .AllowAnyHeader()
+                  .AllowAnyMethod()
+                  .AllowCredentials();
+        });
+});
+#endregion
+
 #region ================== App Build & Middleware ==================
 
 var app = builder.Build();
@@ -202,6 +216,7 @@ app.UseStatusCodePages(async context =>
 // Request pipeline
 //app.UseHttpsRedirection();
 
+app.UseCors("AllowFrontend");
 app.UseAuthentication(); // Validates JWT
 app.UseAuthorization();  // Applies role policies, [Authorize]
 
@@ -209,6 +224,7 @@ app.UseAuthorization();  // Applies role policies, [Authorize]
 app.MapControllers();
 
 #endregion
+
 
 
 // Run the application

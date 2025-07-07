@@ -55,7 +55,7 @@ namespace TaskManager.Controllers
         public async Task<ActionResult> LoginUser(LoginRequestDTO dto)
         {
             var logId = Guid.NewGuid().ToString();  
-            _logger.LogInformation("[{logId}] Login attempt with Username: {Username}", logId,dto.Username);
+            _logger.LogInformation("[{logId}] Login attempt with Username: {Username}", logId,dto.Username) ;
             try
             {
                 if (dto == null || string.IsNullOrWhiteSpace(dto.Username) || string.IsNullOrWhiteSpace(dto.Password))
