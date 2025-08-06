@@ -26,11 +26,16 @@ namespace TaskManager.Controllers
         public async Task<ActionResult> RegisterUser(RegisterRequestDTO dto)
         {
             var logId = Guid.NewGuid().ToString();
+            if (dto == null || string.IsNullOrWhiteSpace(dto.Username) || string.IsNullOrWhiteSpace(dto.Password))
+            {
+                _logger.LogWarning("[{logId}] Invalid registration request: {Request}", logId, dto);
+                return BadRequest(ResponseHelper.BadRequest("Invalid registration data."));
+            }
             _logger.LogInformation("[{logId}] RegisterUser called with Username: {Username}, TenantId: {TenantId}",logId, dto.Username, dto.TenantId);
 
             try
             {
-                if (dto == null || string.IsNullOrWhiteSpace(dto.Username) || string.IsNullOrWhiteSpace(dto.Password))
+                if (string.IsNullOrWhiteSpace(dto.Username) || string.IsNullOrWhiteSpace(dto.Password))
                 {
                     _logger.LogWarning("[{logId}] Invalid registration request: {Request}", logId, dto);
                     return BadRequest(ResponseHelper.BadRequest("Invalid registration data."));
@@ -70,11 +75,14 @@ namespace TaskManager.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "[{logId}] Error occurred during user login for Username: {Username}", logId,dto.Username);
+                _logger.LogError(ex, "[{logId}] Error occurred during user login for Username: {Username}", logId,dto. Username);
                 var errorResponse = ResponseHelper.ServerError();
                 return StatusCode(HttpStatusMapper.GetHttpStatusCode(errorResponse.ResponseCode), errorResponse);
             }
         }
+
+
+
 
         [HttpPost("refresh-token")]
         public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenRequest request)

@@ -37,7 +37,7 @@ builder.Configuration.AddEnvironmentVariables();
 
 #endregion
 
-#region ================== Service Registrations ==================
+#region ================== JWT Auth in Swagger ==================
 
 // Controllers & Swagger
 builder.Services.AddControllers();
@@ -79,6 +79,9 @@ builder.Services.AddSwaggerGen(options =>
         }
     });
 });
+#endregion
+
+#region ================== Services & Repositories Registrations ==================
 
 // AutoMapper
 builder.Services.AddAutoMapper(typeof(AutoMapperProfile));
@@ -90,6 +93,7 @@ builder.Services.AddScoped<ITenantService, TenantService>();
 builder.Services.AddScoped<IDashboardService, DashboardService>();
 builder.Services.AddScoped<CurrentUserService>();
 builder.Services.AddScoped<IRefreshTokenService, RefreshTokenService>();
+builder.Services.AddScoped<IEmailService, EmailService>();
 
 // Repository Services
 builder.Services.AddScoped<ITokenRepository, TokenRepository>();
@@ -123,7 +127,7 @@ builder.Services.Configure<IdentityOptions>(options =>
 });
 #endregion
 
-#region ================== JWT Authentication ==================
+#region ================== JWT Authentication Config==================
 
 builder.Services.AddAuthentication(options =>
 {
@@ -223,12 +227,13 @@ app.UseAuthorization();  // Applies role policies, [Authorize]
 // Maps controller routes
 app.MapControllers();
 
-#endregion
-
-
-
 // Run the application
 app.Run();
 
 // Optional: Remove all default logging providers
+#endregion
+
+
+
+
 

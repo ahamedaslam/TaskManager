@@ -10,6 +10,7 @@ using TaskManager.InterfaceService;
 using TaskManager.IRepository;
 using TaskManager.Models;
 using TaskManager.Models.Response;
+using TaskManager.Services.Interfaces;
 
 public class AuthService : IAuthService
 {
@@ -20,8 +21,9 @@ public class AuthService : IAuthService
     private readonly IMapper _mapper; // Assuming you have a mapper for DTO to Entity conversion
     private readonly IRefreshTokenRepository _refreshTokenRepository;
     private readonly IConfiguration _configuration;
+    private readonly IEmailService _emailService;
 
-    public AuthService(UserManager<ApplicationUser> userManager,ITokenRepository tokenRepository,ILogger<AuthService> logger,AuthDBContext context,IMapper mapper, IRefreshTokenRepository refreshTokenRepository, IConfiguration configuration)
+    public AuthService(UserManager<ApplicationUser> userManager,ITokenRepository tokenRepository,ILogger<AuthService> logger,AuthDBContext context,IMapper mapper, IRefreshTokenRepository refreshTokenRepository, IConfiguration configuration,IEmailService emailService)
     {
         _userManager = userManager;
         _tokenRepository = tokenRepository;
@@ -30,6 +32,7 @@ public class AuthService : IAuthService
         _mapper = mapper;
         _refreshTokenRepository = refreshTokenRepository;
         _configuration = configuration;
+        _emailService = emailService;
 
     }
 
@@ -68,9 +71,12 @@ public class AuthService : IAuthService
                         _logger.LogDebug("[{logId}] Assigned role {Role} to user {Username}", logId,role, registerRequestDTO.Username);
                     }
                 }
+                _logger.LogInformation("Started to send welcome email for user {email}", registerRequestDTO.Username);
+                
+                await _emailService.SendEmailAsync(registerRequestDTO.Username,"Welcome to Task Manager!",$"Hi {registerRequestDTO.Username}, your account has been created successfully!");
 
-               // _logger.LogInformation("[{logId}] User {Username} registered successfully with TenantId: {TenantId}", logId, registerRequestDTO.Username, tenantId);
-                return  ResponseHelper.Success("User registered successfully..!!");
+                // _logger.LogInformation("[{logId}] User {Username} registered successfully with TenantId: {TenantId}", logId, registerRequestDTO.Username, tenantId);
+                return ResponseHelper.Success("User registered successfully..!!");
             }
             else
             {
