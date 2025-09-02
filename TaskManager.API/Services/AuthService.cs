@@ -10,6 +10,7 @@ using TaskManager.InterfaceService;
 using TaskManager.IRepository;
 using TaskManager.Models;
 using TaskManager.Models.Response;
+using TaskManager.Services.Interfaces;
 
 public class AuthService : IAuthService
 {
@@ -18,16 +19,14 @@ public class AuthService : IAuthService
     private readonly ILogger<AuthService> _logger;
     private readonly AuthDBContext _context;
     private readonly IMapper _mapper; // Assuming you have a mapper for DTO to Entity conversion
-    private readonly IRefreshTokenRepository _refreshTokenRepository;
 
-    public AuthService(UserManager<ApplicationUser> userManager,ITokenRepository tokenRepository,ILogger<AuthService> logger,AuthDBContext context,IMapper mapper,IRefreshTokenRepository refreshTokenRepository)
+    public AuthService(UserManager<ApplicationUser> userManager,ITokenRepository tokenRepository,ILogger<AuthService> logger,AuthDBContext context,IMapper mapper)
     {
         _userManager = userManager;
         _tokenRepository = tokenRepository;
         _logger = logger;
         _context = context;
         _mapper = mapper;
-        _refreshTokenRepository = refreshTokenRepository;
 
     }
 
@@ -67,8 +66,7 @@ public class AuthService : IAuthService
                     }
                 }
 
-               // _logger.LogInformation("[{logId}] User {Username} registered successfully with TenantId: {TenantId}", logId, registerRequestDTO.Username, tenantId);
-                return  ResponseHelper.Success("User registered successfully..!!");
+                return  ResponseHelper.Success(logId,"User registered successfully..!!");
             }
             else
             {
@@ -89,33 +87,28 @@ public class AuthService : IAuthService
 
     public async Task<Response> LoginUserAsync(LoginRequestDTO req, string logId)
     {
-        _logger.LogInformation("[{logId}] Starting login for user {Username}", logId, req.Username);
+
+        _logger.LogInformation("[{logId}] Starting login for user {Username}", logId,req.Username);
 
         try
         {
             _logger.LogInformation("[{logId}] Searching for user with email {Email}", logId, req.Username);
             var identityUser = await _userManager.FindByEmailAsync(req.Username);
-
             if (identityUser == null)
             {
-                _logger.LogWarning("[{logId}] User not found with email {Email}", logId, req.Username);
-                return ResponseHelper.NotFound("User not found");
+             return ResponseHelper.NotFound(logId,"User not found");
             }
 
             var isPasswordValid = await _userManager.CheckPasswordAsync(identityUser, req.Password);
             if (!isPasswordValid)
             {
-                _logger.LogWarning("[{logId}] Invalid password attempt for user {Username}", logId, req.Username);
                 return ResponseHelper.Unauthorized("Invalid password");
             }
 
             var roles = await _userManager.GetRolesAsync(identityUser);
             var jwtToken = _tokenRepository.CreateJwtToken(identityUser, roles.ToList());
-            var expiry = DateTime.Now.AddMinutes(15);
 
-            // Generate refresh token
-            var refreshToken = await _refreshTokenRepository.GenerateAsync((ApplicationUser)identityUser);
-            _logger.LogInformation("[{logId}] Refresh token generated for user {UserId}", logId, identityUser.Id);
+            var expiry = DateTime.Now.AddMinutes(15);
 
             return new Response
             {
@@ -123,8 +116,7 @@ public class AuthService : IAuthService
                 ResponseDescription = "Login successful.",
                 ResponseDatas = new
                 {
-                    AccessToken = jwtToken,
-                    RefreshToken = refreshToken.Token,
+                    Token = jwtToken,
                     ExpiresAt = expiry,
                     User = new
                     {
@@ -139,8 +131,8 @@ public class AuthService : IAuthService
         catch (Exception ex)
         {
             _logger.LogError(ex, "[{logId}] Unexpected error during login", logId);
-            return ResponseHelper.ServerError();
+
+           return ResponseHelper.ServerError(logId);
         }
     }
-
 }

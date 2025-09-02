@@ -17,7 +17,6 @@ using TaskManager.Models;
 using TaskManager.Repository;
 using TaskManager.Services;
 using TaskManager.Services.Interfaces;
-using TaskManager.Utility;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -31,7 +30,13 @@ builder.Host.UseSerilog();
 builder.Logging.ClearProviders();
 #endregion
 
-#region ================== Service Registrations ==================
+#region ================== Env Variables Config ==================
+DotNetEnv.Env.Load(); // Loads values from .env
+builder.Configuration.AddEnvironmentVariables();
+
+#endregion
+
+#region ================== JWT Auth in Swagger ==================
 
 // Controllers & Swagger
 builder.Services.AddControllers();
@@ -73,9 +78,12 @@ builder.Services.AddSwaggerGen(options =>
         }
     });
 });
+#endregion
+
+#region ================== Services & Repositories Registrations ==================
 
 // AutoMapper
-builder.Services.AddAutoMapper(typeof(AutoMapperProfile));
+//builder.Services.AddAutoMapper(typeof(AutoMapperProfile));
 
 // App Services
 builder.Services.AddScoped<TaskManagerService>();
@@ -83,7 +91,6 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<ITenantService, TenantService>();
 builder.Services.AddScoped<IDashboardService, DashboardService>();
 builder.Services.AddScoped<CurrentUserService>();
-builder.Services.AddScoped<IRefreshTokenService, RefreshTokenService>();
 
 // Repository Services
 builder.Services.AddScoped<ITokenRepository, TokenRepository>();
@@ -99,7 +106,8 @@ builder.Services.AddHttpContextAccessor();
 #region ================== DBContext & Identity ==================
 
 builder.Services.AddDbContext<AuthDBContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("TaskManagerAuthDB")));
+    options.UseSqlServer(builder.Configuration["DB_CONNECTION_STRING"]
+    ));
 
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>()
     .AddEntityFrameworkStores<AuthDBContext>()
@@ -116,7 +124,7 @@ builder.Services.Configure<IdentityOptions>(options =>
 });
 #endregion
 
-#region ================== JWT Authentication ==================
+#region ================== JWT Authentication Config==================
 
 builder.Services.AddAuthentication(options =>
 {
@@ -133,9 +141,9 @@ builder.Services.AddAuthentication(options =>
         ValidateAudience = true,
         ValidateLifetime = true,
         ValidateIssuerSigningKey = true,
-        ValidIssuer = builder.Configuration["Jwt:Issuer"],
-        ValidAudiences = new[] { builder.Configuration["Jwt:Audience"] },
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]))
+        ValidIssuer = builder.Configuration["JWT_ISSUER"],
+        ValidAudiences = new[] { builder.Configuration["JWT_AUDIENCE"] },
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["JWT_SECRET"]))
     };
 
     // Customize 401 Unauthorized Response
@@ -153,6 +161,20 @@ builder.Services.AddAuthentication(options =>
             return context.Response.WriteAsync(json);
         }
     };
+});
+#endregion
+
+#region ================== Configure CORS ==================
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowFrontend",
+        policy =>
+        {
+            policy.WithOrigins("http://localhost:4200") // Angular dev server
+                  .AllowAnyHeader()
+                  .AllowAnyMethod()
+                  .AllowCredentials();
+        });
 });
 #endregion
 
@@ -195,16 +217,20 @@ app.UseStatusCodePages(async context =>
 // Request pipeline
 //app.UseHttpsRedirection();
 
+app.UseCors("AllowFrontend");
 app.UseAuthentication(); // Validates JWT
 app.UseAuthorization();  // Applies role policies, [Authorize]
 
 // Maps controller routes
 app.MapControllers();
 
-#endregion
-
 // Run the application
 app.Run();
 
 // Optional: Remove all default logging providers
+#endregion
+
+
+
+
 
