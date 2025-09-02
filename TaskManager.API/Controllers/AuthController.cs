@@ -82,6 +82,31 @@ namespace TaskManager.Controllers
         }
 
 
+        [HttpPost("verify-otp")]
+        public async Task<ActionResult> VerifyOtp([FromBody] VerifyOtpRequestDTO dto)
+        {
+            var logId = Guid.NewGuid().ToString();
+
+            if (string.IsNullOrWhiteSpace(dto.UserName) || string.IsNullOrWhiteSpace(dto.OTP))
+            {
+                _logger.LogWarning("[{logId}] OTP verification failed due to missing data: {DTO}", logId, dto);
+                return BadRequest(ResponseHelper.BadRequest("Username and OTP are required."));
+            }
+ 
+            try
+            {
+                _logger.LogInformation("[{logId}] OTP verification attempt for user: {Username}", logId, dto.UserName);
+
+                var response = await _authService.VerifyOtpAsync(dto, logId);
+                return StatusCode(HttpStatusMapper.GetHttpStatusCode(response.ResponseCode), response);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "[{logId}] Error occurred during OTP verification for user: {Username}", logId, dto.UserName);
+                var errorResponse = ResponseHelper.ServerError();
+                return StatusCode(HttpStatusMapper.GetHttpStatusCode(errorResponse.ResponseCode), errorResponse);
+            }
+        }
 
 
         [HttpPost("refresh-token")]

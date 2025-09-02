@@ -12,14 +12,12 @@ namespace TaskManager.Services
     {
         private readonly ITaskManagerRepo _repo;
         private readonly ILogger<TaskManagerService> _logger;
-        private readonly IMapper _mapper; //DTO to Entity conversion
         private readonly CurrentUserService _currentUserService;
 
-        public TaskManagerService(ITaskManagerRepo repo, ILogger<TaskManagerService> logger,IMapper mapper, CurrentUserService currentUserService)
+        public TaskManagerService(ITaskManagerRepo repo, ILogger<TaskManagerService> logger , CurrentUserService currentUserService)
         {
             _repo = repo;
             _logger = logger;
-            _mapper = mapper; // Initialize the mapper if you are using AutoMapper for DTO to Entity conversion
             _currentUserService = currentUserService; // Assuming you have a service to get current user details
             //structured logging
             //With structured logging, the log message is not formatted unless needed (e.g., based on log level).

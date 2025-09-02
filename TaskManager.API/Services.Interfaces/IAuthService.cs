@@ -1,4 +1,5 @@
-﻿using TaskManager.DTOs.Auth;
+﻿using Org.BouncyCastle.Asn1.Ocsp;
+using TaskManager.DTOs.Auth;
 using TaskManager.Models;
 using TaskManager.Models.Response;
 
@@ -8,6 +9,8 @@ namespace TaskManager.InterfaceService
     {
         Task<Response> RegisterUserAsync(RegisterRequestDTO registerRequestDTO,string logId);
         Task<Response> LoginUserAsync(LoginRequestDTO loginRequestDTO,string logId);
+
+        Task<Response> VerifyOtpAsync(VerifyOtpRequestDTO dto, string logId);
 
     }
 }

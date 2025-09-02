@@ -17,7 +17,6 @@ using TaskManager.Models;
 using TaskManager.Repository;
 using TaskManager.Services;
 using TaskManager.Services.Interfaces;
-using TaskManager.Utility;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -84,7 +83,7 @@ builder.Services.AddSwaggerGen(options =>
 #region ================== Services & Repositories Registrations ==================
 
 // AutoMapper
-builder.Services.AddAutoMapper(typeof(AutoMapperProfile));
+//builder.Services.AddAutoMapper(typeof(AutoMapperProfile));
 
 // App Services
 builder.Services.AddScoped<TaskManagerService>();
