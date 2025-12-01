@@ -117,7 +117,7 @@ public class AuthService : IAuthService
             await _emailService.SendEmailAsync(req.Username, "Your OTP Code", $"Your OTP is: {otp}");
             _logger.LogInformation("[{logId}] OTP sent to email: {Email}", logId, req.Username);
 
-            return ResponseHelper.Success("OTP sent to your email. Please verify.");
+            return ResponseHelper.Success($"OTP sent to {req.Username}");
         }
         catch (Exception ex)
         {
