@@ -2,7 +2,7 @@
 {
     public static class HttpStatusMapper  //cant able to create object of this class, so making it static
     {
-        public static int GetHttpStatusCode(int responseCode)
+        public static int  GetHttpStatusCode(int responseCode)
         {
             return responseCode switch
             {

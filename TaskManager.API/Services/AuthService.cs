@@ -21,8 +21,9 @@ public class AuthService : IAuthService
     private readonly IRefreshTokenRepository _refreshTokenRepository;
     private readonly IConfiguration _configuration;
     private readonly IEmailService _emailService;
+    private readonly RedisService _redisService;
 
-    public AuthService(UserManager<ApplicationUser> userManager,ITokenRepository tokenRepository,ILogger<AuthService> logger,AuthDBContext context, IRefreshTokenRepository refreshTokenRepository, IConfiguration configuration,IEmailService emailService)
+    public AuthService(UserManager<ApplicationUser> userManager,ITokenRepository tokenRepository,ILogger<AuthService> logger,AuthDBContext context, IRefreshTokenRepository refreshTokenRepository, IConfiguration configuration,IEmailService emailService,RedisService redisService)
     {
         _userManager = userManager;
         _tokenRepository = tokenRepository;
@@ -31,6 +32,7 @@ public class AuthService : IAuthService
         _refreshTokenRepository = refreshTokenRepository;
         _configuration = configuration;
         _emailService = emailService;
+        _redisService = redisService;
 
     }
 
@@ -136,19 +138,28 @@ public class AuthService : IAuthService
         if (user.OTP != dto.OTP || user.OTPExpiry == null || user.OTPExpiry < DateTime.UtcNow)
             return ResponseHelper.BadRequest("Invalid or expired OTP.");
 
-        // Clear OTP
+        // Clear OTP after successful verification
         user.OTP = null;
         user.OTPExpiry = null;
         await _userManager.UpdateAsync(user);
 
         _logger.LogInformation("[{logId}] OTP verified successfully for {Username}", logId, dto.UserName);
 
-        // Call authenticate logic
+        // Call authenticate logic to generate tokens
         var roles = await _userManager.GetRolesAsync(user);
         var jwtToken = _tokenRepository.CreateJwtToken(user, roles.ToList());
         var expiryMinutes = int.Parse(_configuration["JWT_ACCESS_TOKEN_EXPIRY_MINUTES"]);
         var expiry = DateTime.Now.AddMinutes(expiryMinutes);
         var refreshToken = await _refreshTokenRepository.GenerateAsync(user);
+
+        // Store Refresh Token in Redis
+        await _redisService.StoreRefreshTokenAsync(
+            user.Id.ToString(),
+            refreshToken.Token,
+            refreshToken.Expires
+        );
+
+        _logger.LogInformation("[{logId}] Refresh-Token generated and stored in REDIS server for user - {Username}", logId, dto.UserName);
 
         return new Response
         {

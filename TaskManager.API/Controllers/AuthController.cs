@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.AspNetCore.Mvc;
 using TaskManager.DTOs.Auth;
 using TaskManager.Helper;
 using TaskManager.InterfaceService;
@@ -14,6 +15,8 @@ namespace TaskManager.Controllers
         private readonly IAuthService _authService;
         private readonly ILogger<AuthController> _logger;
         private readonly IRefreshTokenService _refreshTokenService;
+
+        //You are not creating objects, you are receiving already-created objects from the DI container through the constructor.
 
         public AuthController(IAuthService authService, ILogger<AuthController> logger,IRefreshTokenService refreshTokenService)
         {

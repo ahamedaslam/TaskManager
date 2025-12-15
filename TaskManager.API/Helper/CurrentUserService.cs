@@ -16,4 +16,5 @@ public class CurrentUserService
     public string? GetUserId => _contextAccessor.HttpContext?.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
     public string? GetRole => _contextAccessor.HttpContext?.User?.FindFirst(ClaimTypes.Role)?.Value;
     public string? GetTenantId => _contextAccessor.HttpContext?.User?.FindFirst("TenantId")?.Value;
+    public string? GetAccessToken => _contextAccessor.HttpContext?.User?.FindFirst("AccessToken")?.Value;
 }

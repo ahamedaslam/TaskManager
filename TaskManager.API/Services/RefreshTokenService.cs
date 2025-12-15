@@ -19,16 +19,17 @@ namespace TaskManager.Services
         private readonly ITokenRepository _tokenRepository;
         private readonly IRefreshTokenRepository _refreshTokenRepository;
         private readonly IConfiguration _configuration;
+        private readonly CurrentUserService _currentUserService;
 
 
-        public RefreshTokenService(ILogger<RefreshTokenService> logger,UserManager<ApplicationUser> userManager, ITokenRepository tokenRepository, IRefreshTokenRepository refreshTokenRepository, IConfiguration configuration)
+        public RefreshTokenService(ILogger<RefreshTokenService> logger,UserManager<ApplicationUser> userManager, ITokenRepository tokenRepository, IRefreshTokenRepository refreshTokenRepository, IConfiguration configuration, CurrentUserService currentUserService)
         {
             _logger = logger;
             _userManager = userManager;
             _tokenRepository = tokenRepository;
             _refreshTokenRepository = refreshTokenRepository;
             _configuration = configuration;
-
+            _currentUserService = currentUserService;
         }
         public async Task<Response> GenerateTokensAsync(ApplicationUser user)
         {
@@ -66,7 +67,7 @@ namespace TaskManager.Services
                   return ResponseHelper.BadRequest("Invalid access token");
                 }
 
-                var userId = principal.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                var userId = _currentUserService.GetUserId;
                 if (string.IsNullOrEmpty(userId))
                 {
                     return ResponseHelper.BadRequest("User ID not found in token");
@@ -102,13 +103,15 @@ namespace TaskManager.Services
                 ValidateIssuer = true,
                 ValidateAudience = true,
                 ValidateIssuerSigningKey = true,
-                ValidateLifetime = false, // <-- This allows expired tokens to be validated
-                ValidIssuer = _configuration["Jwt:Issuer"],
-                ValidAudience = _configuration["Jwt:Audience"],
+                ValidateLifetime = false, // <-- This allows expired tokens to be validated Even if access token is expired,
+                                          // still allow me to read claims from it.
+                ValidIssuer = _configuration["Jwt_Issuer"],
+                ValidAudience = _configuration["Jwt_Audience"],
                 IssuerSigningKey = new SymmetricSecurityKey(
-                    Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]!)
+                    Encoding.UTF8.GetBytes(_configuration["Jwt_Secret"]!)
                 )
             };
+           // _logger.LogInformation("Loaded Secret: {secret}", _configuration["Jwt:Secret"]);
 
             var tokenHandler = new JwtSecurityTokenHandler();
             try

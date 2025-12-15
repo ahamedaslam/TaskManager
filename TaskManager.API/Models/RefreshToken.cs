@@ -22,7 +22,7 @@ namespace TaskManager.Models
         //Navigation property to the ApplicationUser
         
         public string UserId { get; set; }
-        //his is optional.It allows you to easily navigate from a RefreshToken to its related ApplicationUser in your C# code,
+        //This is optional.It allows you to easily navigate from a RefreshToken to its related ApplicationUser ,
         [ForeignKey("UserId")]
         public ApplicationUser User{ get; set; }
 

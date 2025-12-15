@@ -80,7 +80,21 @@ builder.Services.AddSwaggerGen(options =>
 });
 #endregion
 
-#region ================== Services & Repositories Registrations ==================
+#region ================== CONFIG REDIS ==================
+
+var redisHost = builder.Configuration["REDIS_HOST"];
+var redisPort = builder.Configuration["REDIS_PORT"];
+
+builder.Services.AddStackExchangeRedisCache(options =>
+{
+    options.Configuration = $"{redisHost}:{redisPort}";
+    options.InstanceName = "TaskManager_";
+});
+
+#endregion
+
+
+#region ================== DI   Services & Repositories Registrations ==================
 
 // AutoMapper
 //builder.Services.AddAutoMapper(typeof(AutoMapperProfile));
@@ -93,6 +107,14 @@ builder.Services.AddScoped<IDashboardService, DashboardService>();
 builder.Services.AddScoped<CurrentUserService>();
 builder.Services.AddScoped<IRefreshTokenService, RefreshTokenService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
+builder.Services.AddScoped<IAIChatService, AIChatService>();
+
+//Redis Cache Service
+builder.Services.AddScoped<RedisService>();
+
+//Http client
+builder.Services.AddHttpClient();
+
 
 // Repository Services
 builder.Services.AddScoped<ITokenRepository, TokenRepository>();
@@ -172,12 +194,16 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AllowFrontend",
         policy =>
         {
-            policy.WithOrigins("http://localhost:4200") // Angular dev server
-                  .AllowAnyHeader()
-                  .AllowAnyMethod()
-                  .AllowCredentials();
+            policy.WithOrigins(
+                    "http://localhost:4200",
+                    "https://localhost:7208"  
+                )
+                .AllowAnyHeader()
+                .AllowAnyMethod()
+                .AllowCredentials();
         });
 });
+
 #endregion
 
 #region ================== App Build & Middleware ==================
