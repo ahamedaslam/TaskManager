@@ -8,7 +8,7 @@ namespace TaskManager.Models
         public Tenant Tenant { get; set; } // Navigation property to Tenant
 
 
-        // Additional properties for OTP and its expiry
+      //properties for OTP and its expiry
         public string?  OTP { get; set; }
         public DateTime? OTPExpiry { get; set; }
 

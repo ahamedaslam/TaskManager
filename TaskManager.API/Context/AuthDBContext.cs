@@ -17,6 +17,7 @@ namespace TaskManager.DBContext
 
         public DbSet<TaskItem> TaskItems { get; set; }
         public DbSet<Tenant> Tenants { get; set; }
+        public DbSet<ChatHistory> ChatHistories { get; set; }
 
         public DbSet<RefreshToken> RefreshTokens { get; set; }
 
@@ -32,6 +33,13 @@ namespace TaskManager.DBContext
 
             var adminRoleId = "55e14e82-8ef2-44d0-8f75-be74a4bdfa5f";  //Guid.NewGuid().ToString();
             var normalRoleId = "2a0c839e-ded6-4715-b8bd-53a514cb3a26";
+            
+            
+            builder.Entity<ChatHistory>()
+                .HasOne(ch => ch.User)
+                .WithMany()
+                .HasForeignKey(ch => ch.UserId);
+
 
             var roles = new List<IdentityRole> //sed up initial roles
             {
