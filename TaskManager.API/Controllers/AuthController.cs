@@ -38,12 +38,6 @@ namespace TaskManager.Controllers
 
             try
             {
-                if (string.IsNullOrWhiteSpace(dto.Username) || string.IsNullOrWhiteSpace(dto.Password))
-                {
-                    _logger.LogWarning("[{logId}] Invalid registration request: {Request}", logId, dto);
-                    return BadRequest(ResponseHelper.BadRequest("Invalid registration data."));
-                }
-                _logger.LogDebug("[{logId}] Entering RegisterUserAsync with Username: {Username}, TenantId: {TenantId}", logId, dto.Username, dto.TenantId);
                 var response = await _authService.RegisterUserAsync(dto,logId);
                 //_logger.LogInformation("[{logId}] User registration completed for Username: {Username} with ResponseCode: {ResponseCode}",logId, dto.Username, response.ResponseCode);
                 return StatusCode(HttpStatusMapper.GetHttpStatusCode(response.ResponseCode), response);
@@ -73,56 +67,9 @@ namespace TaskManager.Controllers
                 }
                 _logger.LogDebug("[{logId}] Entering LoginUserAsync with Username: {Username}", logId, dto.Username);
                 var response = await _authService.LoginUserAsync(dto,logId);
+                _logger.LogInformation("[{logId}] Login Successfull for Username: {Username} with ResponseCode: {ResponseCode}",logId, dto.Username, response.ResponseCode);
                 return Ok(response);
 
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "[{logId}] Error occurred during user login for Username: {Username}", logId,dto. Username);
-                var errorResponse = ResponseHelper.ServerError();
-                return StatusCode(HttpStatusMapper.GetHttpStatusCode(errorResponse.ResponseCode), errorResponse);
-            }
-        }
-
-
-        [HttpPost("verify-otp")]
-        public async Task<ActionResult> VerifyOtp([FromBody] VerifyOtpRequestDTO dto)
-        {
-            var logId = Guid.NewGuid().ToString();
-
-            if (string.IsNullOrWhiteSpace(dto.UserName) || string.IsNullOrWhiteSpace(dto.OTP))
-            {
-                _logger.LogWarning("[{logId}] OTP verification failed due to missing data: {DTO}", logId, dto);
-                return BadRequest(ResponseHelper.BadRequest("Username and OTP are required."));
-            }
- 
-            try
-            {
-                _logger.LogInformation("[{logId}] OTP verification attempt for user: {Username}", logId, dto.UserName);
-
-                var response = await _authService.VerifyOtpAsync(dto, logId);
-                return StatusCode(HttpStatusMapper.GetHttpStatusCode(response.ResponseCode), response);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "[{logId}] Error occurred during OTP verification for user: {Username}", logId, dto.UserName);
-                var errorResponse = ResponseHelper.ServerError();
-                return StatusCode(HttpStatusMapper.GetHttpStatusCode(errorResponse.ResponseCode), errorResponse);
-            }
-        }
-
-
-        [HttpPost("refresh-token")]
-        public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenRequest request)
-        {
-            try
-            {
-                if (string.IsNullOrWhiteSpace(request.AccessToken) || string.IsNullOrWhiteSpace(request.RefreshToken))
-                {
-                    return BadRequest(ResponseHelper.BadRequest("Access token and refresh token are required."));
-                }
-                var response = await _refreshTokenService.RefreshAsync(request.AccessToken, request.RefreshToken);
-                return Ok(response);
             }
             catch (Exception ex)
             {
@@ -132,7 +79,6 @@ namespace TaskManager.Controllers
                 return StatusCode(HttpStatusMapper.GetHttpStatusCode(errorResponse.ResponseCode), errorResponse);
             }
         }
-
     }
 
 }

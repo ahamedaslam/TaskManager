@@ -105,16 +105,6 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<ITenantService, TenantService>();
 builder.Services.AddScoped<IDashboardService, DashboardService>();
 builder.Services.AddScoped<CurrentUserService>();
-builder.Services.AddScoped<IRefreshTokenService, RefreshTokenService>();
-builder.Services.AddScoped<IEmailService, EmailService>();
-builder.Services.AddScoped<IAIChatService, AIChatService>();
-
-//Redis Cache Service
-builder.Services.AddScoped<RedisService>();
-
-//Http client
-builder.Services.AddHttpClient();
-
 
 // Repository Services
 builder.Services.AddScoped<ITokenRepository, TokenRepository>();
