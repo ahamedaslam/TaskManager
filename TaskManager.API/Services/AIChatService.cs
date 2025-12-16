@@ -14,7 +14,7 @@ namespace TaskManager.Services
         private readonly AuthDBContext _dBContext;
         private readonly HttpClient _httpClient;
         private readonly ILogger<AIChatService> _logger;
- 
+   
 
         public AIChatService(AuthDBContext dBContext, HttpClient httpClient,ILogger<AIChatService> logger)
         {
@@ -30,7 +30,10 @@ namespace TaskManager.Services
                 "AI chat request started. UserId={UserId}, TenantId={TenantId}",
                 userId, tenantId);
 
+
             // Load chat history
+            // 1️ Load chat history
+
             _logger.LogDebug("Loading last 10 chat messages");
 
             var history = await _dBContext.ChatHistories
