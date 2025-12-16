@@ -14,7 +14,7 @@ namespace TaskManager.Services
         private readonly AuthDBContext _dBContext;
         private readonly HttpClient _httpClient;
         private readonly ILogger<AIChatService> _logger;
-        private readonly CleanAi _cleanAiText;
+   
 
         public AIChatService(AuthDBContext dBContext, HttpClient httpClient,ILogger<AIChatService> logger)
         {
@@ -30,7 +30,10 @@ namespace TaskManager.Services
                 "AI chat request started. UserId={UserId}, TenantId={TenantId}",
                 userId, tenantId);
 
+
+            // Load chat history
             // 1️ Load chat history
+
             _logger.LogDebug("Loading last 10 chat messages");
 
             var history = await _dBContext.ChatHistories
@@ -42,7 +45,7 @@ namespace TaskManager.Services
 
             _logger.LogInformation("Loaded {Count} chat history records", history.Count);
 
-            // 2️ Load tasks
+            // Load tasks
             _logger.LogDebug("Loading user tasks");
 
             var tasks = await _dBContext.TaskItems
@@ -52,7 +55,7 @@ namespace TaskManager.Services
 
             _logger.LogInformation("Loaded {Count} tasks for AI context", tasks.Count);
 
-            // 3️ Build prompt
+            //  Build prompt
             var promptBuilder = new StringBuilder();
             promptBuilder.AppendLine("User Tasks:");
             foreach (var task in tasks)
@@ -74,7 +77,7 @@ namespace TaskManager.Services
                 stream = false
             };
 
-            // 4️⃣ Call Ollama
+            // Call Ollama
             _logger.LogInformation("Sending request to Ollama");
 
             var response = await _httpClient.PostAsJsonAsync("http://localhost:11434/api/generate", payload);
@@ -100,7 +103,7 @@ namespace TaskManager.Services
 
             _logger.LogInformation("AI response received successfully");
 
-            // 5️⃣ Save chat history
+            // Save chat history
             _logger.LogDebug("Saving chat history to database");
 
             _dBContext.ChatHistories.AddRange(
