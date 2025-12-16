@@ -96,7 +96,7 @@ public class AuthService : IAuthService
             var identityUser = await _userManager.FindByEmailAsync(req.Username);
             if (identityUser == null)
             {
-             return ResponseHelper.NotFound(logId,"User not found");
+             return ResponseHelper.NotFound("User not found");
             }
 
             var isPasswordValid = await _userManager.CheckPasswordAsync(identityUser, req.Password);

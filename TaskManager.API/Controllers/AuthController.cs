@@ -73,7 +73,7 @@ namespace TaskManager.Controllers
             }
             catch (Exception ex)
             {
-                var logId = Guid.NewGuid().ToString();
+         
                 _logger.LogError(ex, "[{logId}] Error occurred during token refresh", logId);
                 var errorResponse = ResponseHelper.ServerError();
                 return StatusCode(HttpStatusMapper.GetHttpStatusCode(errorResponse.ResponseCode), errorResponse);
