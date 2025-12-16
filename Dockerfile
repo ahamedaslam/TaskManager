@@ -12,16 +12,21 @@
 #on the same virtual network with linked environment variables and volumes.
 
 
-FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS base
+# Runtime image
+FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
 WORKDIR /app
 EXPOSE 8080
 
-FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
+# Build image
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 COPY . .
-RUN dotnet restore
-RUN dotnet publish -c Release -o /app/publish
 
+# Restore & publish ONLY the API
+RUN dotnet restore TaskManager.API/TaskManager.API.csproj
+RUN dotnet publish TaskManager.API/TaskManager.API.csproj -c Release -o /app/publish
+
+# Final image
 FROM base AS final
 WORKDIR /app
 COPY --from=build /app/publish .
