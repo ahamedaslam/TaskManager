@@ -9,9 +9,6 @@ namespace TaskManager.InterfaceService
     {
         Task<Response> RegisterUserAsync(RegisterRequestDTO registerRequestDTO,string logId);
         Task<Response> LoginUserAsync(LoginRequestDTO loginRequestDTO,string logId);
-
-        Task<Response> VerifyOtpAsync(VerifyOtpRequestDTO dto, string logId);
-
     }
 }
     

@@ -18,21 +18,15 @@ public class AuthService : IAuthService
     private readonly ITokenRepository _tokenRepository;
     private readonly ILogger<AuthService> _logger;
     private readonly AuthDBContext _context;
-    private readonly IRefreshTokenRepository _refreshTokenRepository;
-    private readonly IConfiguration _configuration;
-    private readonly IEmailService _emailService;
-    private readonly RedisService _redisService;
+    private readonly IMapper _mapper; // Assuming you have a mapper for DTO to Entity conversion
 
-    public AuthService(UserManager<ApplicationUser> userManager,ITokenRepository tokenRepository,ILogger<AuthService> logger,AuthDBContext context, IRefreshTokenRepository refreshTokenRepository, IConfiguration configuration,IEmailService emailService,RedisService redisService)
+    public AuthService(UserManager<ApplicationUser> userManager,ITokenRepository tokenRepository,ILogger<AuthService> logger,AuthDBContext context,IMapper mapper)
     {
         _userManager = userManager;
         _tokenRepository = tokenRepository;
         _logger = logger;
         _context = context;
-        _refreshTokenRepository = refreshTokenRepository;
-        _configuration = configuration;
-        _emailService = emailService;
-        _redisService = redisService;
+        _mapper = mapper;
 
     }
 
@@ -71,12 +65,8 @@ public class AuthService : IAuthService
                         _logger.LogDebug("[{logId}] Assigned role {Role} to user {Username}", logId,role, registerRequestDTO.Username);
                     }
                 }
-                _logger.LogInformation("Started to send welcome email for user {email}", registerRequestDTO.Username);
-                
-                await _emailService.SendEmailAsync(registerRequestDTO.Username,"Welcome to Task Manager!",$"Hi {registerRequestDTO.Username}, your account has been created successfully!");
 
-                // _logger.LogInformation("[{logId}] User {Username} registered successfully with TenantId: {TenantId}", logId, registerRequestDTO.Username, tenantId);
-                return ResponseHelper.Success("User registered successfully..!!");
+                return  ResponseHelper.Success(logId,"User registered successfully..!!");
             }
             else
             {
@@ -97,90 +87,52 @@ public class AuthService : IAuthService
 
     public async Task<Response> LoginUserAsync(LoginRequestDTO req, string logId)
     {
-        _logger.LogInformation("[{logId}] Starting login for user {Username}", logId, req.Username);
+
+        _logger.LogInformation("[{logId}] Starting login for user {Username}", logId,req.Username);
 
         try
         {
+            _logger.LogInformation("[{logId}] Searching for user with email {Email}", logId, req.Username);
             var identityUser = await _userManager.FindByEmailAsync(req.Username);
             if (identityUser == null)
-                return ResponseHelper.NotFound("User not found");
+            {
+             return ResponseHelper.NotFound(logId,"User not found");
+            }
 
             var isPasswordValid = await _userManager.CheckPasswordAsync(identityUser, req.Password);
             if (!isPasswordValid)
+            {
                 return ResponseHelper.Unauthorized("Invalid password");
+            }
 
-            // Generate OTP
-            var otp = new Random().Next(100000, 999999).ToString();
-            identityUser.OTP = otp;
-            identityUser.OTPExpiry = DateTime.UtcNow.AddMinutes(5);
-            await _userManager.UpdateAsync(identityUser);
+            var roles = await _userManager.GetRolesAsync(identityUser);
+            var jwtToken = _tokenRepository.CreateJwtToken(identityUser, roles.ToList());
 
-            // Send OTP to email
-            await _emailService.SendEmailAsync(req.Username, "Your OTP Code", $"Your OTP is: {otp}");
-            _logger.LogInformation("[{logId}] OTP sent to email: {Email}", logId, req.Username);
+            var expiry = DateTime.Now.AddMinutes(15);
 
-            return ResponseHelper.Success($"OTP sent to {req.Username}");
+            return new Response
+            {
+                ResponseCode = 0,
+                ResponseDescription = "Login successful.",
+                ResponseDatas = new
+                {
+                    Token = jwtToken,
+                    ExpiresAt = expiry,
+                    User = new
+                    {
+                        UserId = identityUser.Id,
+                        UserName = identityUser.UserName,
+                        Roles = roles,
+                        TenantId = identityUser.TenantId
+                    }
+                }
+            };
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "[{logId}] Error during login", logId);
-            return ResponseHelper.ServerError();
+            _logger.LogError(ex, "[{logId}] Unexpected error during login", logId);
+
+           return ResponseHelper.ServerError(logId);
         }
     }
-
-
-    public async Task<Response> VerifyOtpAsync(VerifyOtpRequestDTO dto, string logId)
-    {
-        var user = await _userManager.FindByEmailAsync(dto.UserName);
-        if (user == null)
-            return ResponseHelper.NotFound("User not found");
-
-        if (user.OTP != dto.OTP || user.OTPExpiry == null || user.OTPExpiry < DateTime.UtcNow)
-            return ResponseHelper.BadRequest("Invalid or expired OTP.");
-
-        // Clear OTP after successful verification
-        user.OTP = null;
-        user.OTPExpiry = null;
-        await _userManager.UpdateAsync(user);
-
-        _logger.LogInformation("[{logId}] OTP verified successfully for {Username}", logId, dto.UserName);
-
-        // Call authenticate logic to generate tokens
-        var roles = await _userManager.GetRolesAsync(user);
-        var jwtToken = _tokenRepository.CreateJwtToken(user, roles.ToList());
-        var expiryMinutes = int.Parse(_configuration["JWT_ACCESS_TOKEN_EXPIRY_MINUTES"]);
-        var expiry = DateTime.Now.AddMinutes(expiryMinutes);
-        var refreshToken = await _refreshTokenRepository.GenerateAsync(user);
-
-        // Store Refresh Token in Redis
-        await _redisService.StoreRefreshTokenAsync(
-            user.Id.ToString(),
-            refreshToken.Token,
-            refreshToken.Expires
-        );
-
-        _logger.LogInformation("[{logId}] Refresh-Token generated and stored in REDIS server for user - {Username}", logId, dto.UserName);
-
-        return new Response
-        {
-            ResponseCode = 0,
-            ResponseDescription = "Authentication successful.",
-            ResponseDatas = new
-            {
-                AccessToken = jwtToken,
-                RefreshToken = refreshToken.Token,
-                ExpiresAt = expiry,
-                User = new
-                {
-                    UserId = user.Id,
-                    UserName = user.UserName,
-                    Roles = roles,
-                    TenantId = user.TenantId
-                }
-            }
-        };
-    }
-
-
-
 }

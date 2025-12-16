@@ -12,6 +12,7 @@ namespace TaskManager.Services
     {
         private readonly ITaskManagerRepo _repo;
         private readonly ILogger<TaskManagerService> _logger;
+        private readonly IMapper _mapper; // Assuming you have a mapper for DTO to Entity conversion
         private readonly CurrentUserService _currentUserService;
 
         public TaskManagerService(ITaskManagerRepo repo, ILogger<TaskManagerService> logger , CurrentUserService currentUserService)

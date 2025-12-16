@@ -12,7 +12,6 @@ namespace TaskManager.Repository
         private readonly AuthDBContext _context;
         private readonly IConfiguration _configuration;
 
-        public RefreshTokenRepository(AuthDBContext context, IConfiguration configuration)
         {
             _context = context;
             _configuration = configuration;
@@ -26,7 +25,6 @@ namespace TaskManager.Repository
             {
                 Token = GenerateSecureToken(),
                 UserId = user.Id,
-                Expires = DateTime.Now.AddDays(expiryDays),
                 CreatedAt = DateTime.Now
             };
 
