@@ -104,7 +104,12 @@ builder.Services.AddScoped<TaskManagerService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<ITenantService, TenantService>();
 builder.Services.AddScoped<IDashboardService, DashboardService>();
+builder.Services.AddScoped<IRefreshTokenService, RefreshTokenService>();
+builder.Services.AddScoped<IAIChatService,AIChatService>();
 builder.Services.AddScoped<CurrentUserService>();
+
+//register http client 
+builder.Services.AddHttpClient();
 
 // Repository Services
 builder.Services.AddScoped<ITokenRepository, TokenRepository>();
