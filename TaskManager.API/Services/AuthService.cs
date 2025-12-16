@@ -1,5 +1,4 @@
 ﻿// AuthService.cs
-using AutoMapper;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using TaskManager.DBContext;
@@ -18,15 +17,15 @@ public class AuthService : IAuthService
     private readonly ITokenRepository _tokenRepository;
     private readonly ILogger<AuthService> _logger;
     private readonly AuthDBContext _context;
-    private readonly IMapper _mapper; // Assuming you have a mapper for DTO to Entity conversion
+   // private readonly IMapper _mapper; // Assuming you have a mapper for DTO to Entity conversion
 
-    public AuthService(UserManager<ApplicationUser> userManager,ITokenRepository tokenRepository,ILogger<AuthService> logger,AuthDBContext context,IMapper mapper)
+    public AuthService(UserManager<ApplicationUser> userManager,ITokenRepository tokenRepository,ILogger<AuthService> logger,AuthDBContext context)
     {
         _userManager = userManager;
         _tokenRepository = tokenRepository;
         _logger = logger;
         _context = context;
-        _mapper = mapper;
+       // _mapper = mapper;
 
     }
 
