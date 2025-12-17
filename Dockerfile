@@ -33,4 +33,4 @@ RUN dotnet publish TaskManager.API/TaskManager.MultiTenant.csproj -c Release -o 
 FROM base AS final
 WORKDIR /app
 COPY --from=build /app/publish .
-ENTRYPOINT ["dotnet", "TaskManager.dll"]
+ENTRYPOINT ["dotnet", "TaskManager.MultiTenant.dll"]
