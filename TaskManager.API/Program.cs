@@ -45,9 +45,9 @@ builder.Services.AddSwaggerGen(options =>
 {
     options.SwaggerDoc("v1", new OpenApiInfo
     {
-        Title = "Task Manager APIs",
+        Title = "MultiTenant APIs",
         Version = "v1",
-        Description = "API for managing Task Manager"
+        Description = "APIs for managing Task Manager"
     });
 
     // JWT Auth in Swagger
