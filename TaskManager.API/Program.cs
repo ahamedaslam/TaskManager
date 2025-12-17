@@ -212,11 +212,6 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
-else
-{
-    // Production: turn off reloads, file watching
-    builder.Configuration.AddJsonFile("appsettings.Production.json", optional: false, reloadOnChange: false);
-}
 
 // Custom Global Exception Handler Middleware
 app.UseMiddleware<ExceptionHandleMiddleware>();
