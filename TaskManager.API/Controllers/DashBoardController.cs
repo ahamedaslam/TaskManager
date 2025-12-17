@@ -1,8 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using TaskManager.DTOs.DashBoard;
 using TaskManager.Helper;
 using TaskManager.Services.Interfaces;
-using TaskManager.Models;
 using Microsoft.AspNetCore.Authorization;
 
 namespace TaskManager.Controllers

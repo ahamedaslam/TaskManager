@@ -1,5 +1,4 @@
-﻿using Microsoft.AspNetCore.Http.HttpResults;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using TaskManager.DTOs.Auth;
 using TaskManager.Helper;
 using TaskManager.InterfaceService;
@@ -15,6 +14,7 @@ namespace TaskManager.Controllers
         private readonly IAuthService _authService;
         private readonly ILogger<AuthController> _logger;
         private readonly IRefreshTokenService _refreshTokenService;
+
 
         //You are not creating objects, you are receiving already-created objects from the DI container through the constructor.
 
@@ -74,6 +74,55 @@ namespace TaskManager.Controllers
             catch (Exception ex)
             {
          
+                _logger.LogError(ex, "[{logId}] Error occurred during token refresh", logId);
+                var errorResponse = ResponseHelper.ServerError();
+                return StatusCode(HttpStatusMapper.GetHttpStatusCode(errorResponse.ResponseCode), errorResponse);
+            }
+        }
+
+
+        [HttpPost("verify-otp")]
+        public async Task<ActionResult> VerifyOtp([FromBody] VerifyOtpRequestDTO dto)
+        {
+            var logId = Guid.NewGuid().ToString();
+
+            if (string.IsNullOrWhiteSpace(dto.UserName) || string.IsNullOrWhiteSpace(dto.OTP))
+            {
+                _logger.LogWarning("[{logId}] OTP verification failed due to missing data: {DTO}", logId, dto);
+                return BadRequest(ResponseHelper.BadRequest("Username and OTP are required."));
+            }
+
+            try
+            {
+                _logger.LogInformation("[{logId}] OTP verification attempt for user: {Username}", logId, dto.UserName);
+
+                var response = await _authService.VerifyOtpAsync(dto, logId);
+                return StatusCode(HttpStatusMapper.GetHttpStatusCode(response.ResponseCode), response);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "[{logId}] Error occurred during OTP verification for user: {Username}", logId, dto.UserName);
+                var errorResponse = ResponseHelper.ServerError();
+                return StatusCode(HttpStatusMapper.GetHttpStatusCode(errorResponse.ResponseCode), errorResponse);
+            }
+        }
+
+
+        [HttpPost("refresh-token")]
+        public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenRequest request)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(request.AccessToken) || string.IsNullOrWhiteSpace(request.RefreshToken))
+                {
+                    return BadRequest(ResponseHelper.BadRequest("Access token and refresh token are required."));
+                }
+                var response = await _refreshTokenService.RefreshAsync(request.AccessToken, request.RefreshToken);
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                var logId = Guid.NewGuid().ToString();
                 _logger.LogError(ex, "[{logId}] Error occurred during token refresh", logId);
                 var errorResponse = ResponseHelper.ServerError();
                 return StatusCode(HttpStatusMapper.GetHttpStatusCode(errorResponse.ResponseCode), errorResponse);

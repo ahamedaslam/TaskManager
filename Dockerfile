@@ -26,8 +26,8 @@ WORKDIR /src
 COPY . .
 
 # Restore & publish ONLY the API
-RUN dotnet restore TaskManager.API/TaskManager.csproj
-RUN dotnet publish TaskManager.API/TaskManager.csproj -c Release -o /app/publish
+RUN dotnet restore TaskManager.API/TaskManager.MultiTenant.csproj
+RUN dotnet publish TaskManager.API/TaskManager.MultiTenant.csproj -c Release -o /app/publish
 
 # Final image
 FROM base AS final

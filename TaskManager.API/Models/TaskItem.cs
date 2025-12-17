@@ -8,7 +8,7 @@ namespace TaskManager.Models
         public Guid Id { get; set; }
         public string Title { get; set; }
         public string Description { get; set; }
-        public DateTime DueTime { get; set; }
+        public DateTime? DueTime { get; set; }
         public bool IsCompleted { get; set; }
         public TaskPriority Priority { get; set; } // e.g., "Low", "Medium", "High"
 

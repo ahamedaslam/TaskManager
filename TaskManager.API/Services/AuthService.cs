@@ -17,15 +17,22 @@ public class AuthService : IAuthService
     private readonly ITokenRepository _tokenRepository;
     private readonly ILogger<AuthService> _logger;
     private readonly AuthDBContext _context;
-   // private readonly IMapper _mapper; // Assuming you have a mapper for DTO to Entity conversion
+    private readonly IConfiguration _configuration;
+    private readonly IRefreshTokenRepository _refreshTokenRepository;
+    private readonly IEmailService _emailService;
 
-    public AuthService(UserManager<ApplicationUser> userManager,ITokenRepository tokenRepository,ILogger<AuthService> logger,AuthDBContext context)
+    // private readonly IMapper _mapper; // Assuming you have a mapper for DTO to Entity conversion
+
+    public AuthService(UserManager<ApplicationUser> userManager,ITokenRepository tokenRepository, IRefreshTokenRepository refreshTokenRepository, IEmailService emailService,IConfiguration configuration, ILogger<AuthService> logger,AuthDBContext context)
     {
         _userManager = userManager;
         _tokenRepository = tokenRepository;
         _logger = logger;
         _context = context;
-       // _mapper = mapper;
+        _refreshTokenRepository = refreshTokenRepository;
+        _emailService = emailService;
+        _configuration = configuration;
+        // _mapper = mapper;
 
     }
 
@@ -91,41 +98,38 @@ public class AuthService : IAuthService
 
         try
         {
+            //find user by eamil
             _logger.LogInformation("[{logId}] Searching for user with email {Email}", logId, req.Username);
             var identityUser = await _userManager.FindByEmailAsync(req.Username);
-            if (identityUser == null)
+                if (identityUser == null)
             {
              return ResponseHelper.NotFound("User not found");
             }
-
+            //check-pass
             var isPasswordValid = await _userManager.CheckPasswordAsync(identityUser, req.Password);
             if (!isPasswordValid)
             {
                 return ResponseHelper.Unauthorized("Invalid password");
             }
+           
+            // Generate OTP
+            var otp = new Random().Next(100000, 999999).ToString();
+            identityUser.OTP = otp;
+            var otpExpiryMinutes = int.Parse(_configuration["OTP_EXPIRY_MINUTES"]);
+            identityUser.OTPExpiry = DateTime.UtcNow.AddMinutes(otpExpiryMinutes);
+            await _userManager.UpdateAsync(identityUser);
 
-            var roles = await _userManager.GetRolesAsync(identityUser);
-            var jwtToken = _tokenRepository.CreateJwtToken(identityUser, roles.ToList());
+            //var roles = await _userManager.GetRolesAsync(identityUser);
+            //var jwtToken = _tokenRepository.CreateJwtToken(identityUser, roles.ToList());
+            // var expiry = DateTime.Now.AddMinutes(15);
 
-            var expiry = DateTime.Now.AddMinutes(15);
+            _logger.LogInformation("OTP started sending through email in Background");
 
-            return new Response
-            {
-                ResponseCode = 0,
-                ResponseDescription = "Login successful.",
-                ResponseDatas = new
-                {
-                    Token = jwtToken,
-                    ExpiresAt = expiry,
-                    User = new
-                    {
-                        UserId = identityUser.Id,
-                        UserName = identityUser.UserName,
-                        Roles = roles,
-                        TenantId = identityUser.TenantId
-                    }
-                }
-            };
+            _ = Task.Run(() => _emailService.SendEmailAsync(req.Username, "Your OTP Code", $"Your OTP is: {otp}"));
+            
+            _logger.LogInformation("[{logId}] OTP sent to email: {Email}", logId, req.Username);
+
+            return ResponseHelper.Success("OTP sent to your email. Please verify.");
         }
         catch (Exception ex)
         {
@@ -133,5 +137,48 @@ public class AuthService : IAuthService
 
            return ResponseHelper.ServerError(logId);
         }
+    }
+
+    public async Task<Response> VerifyOtpAsync(VerifyOtpRequestDTO dto, string logId)
+    {
+        var user = await _userManager.FindByEmailAsync(dto.UserName);
+        if (user == null)
+            return ResponseHelper.NotFound("User not found");
+
+        if (user.OTP != dto.OTP || user.OTPExpiry == null || user.OTPExpiry < DateTime.UtcNow)
+            return ResponseHelper.BadRequest("Invalid or expired OTP.");
+
+        // Clear OTP
+        user.OTP = null;
+        user.OTPExpiry = null;
+        await _userManager.UpdateAsync(user);
+
+        _logger.LogInformation("[{logId}] OTP verified successfully for {Username}", logId, dto.UserName);
+
+        // Call authenticate logic
+        var roles = await _userManager.GetRolesAsync(user);
+        var jwtToken = _tokenRepository.CreateJwtToken(user, roles.ToList());
+        var expiryMinutes = int.Parse(_configuration["JWT_ACCESS_TOKEN_EXPIRY_MINUTES"]);
+        var expiry = DateTime.Now.AddMinutes(expiryMinutes);
+        var refreshToken = await _refreshTokenRepository.GenerateAsync(user);
+
+        return new Response
+        {
+            ResponseCode = 0,
+            ResponseDescription = "Authentication successful.",
+            ResponseDatas = new
+            {
+                AccessToken = jwtToken,
+                RefreshToken = refreshToken.Token,
+                ExpiresAt = expiry,
+                User = new
+                {
+                    UserId = user.Id,
+                    UserName = user.UserName,
+                    Roles = roles,
+                    TenantId = user.TenantId
+                }
+            }
+        };
     }
 }

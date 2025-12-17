@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using TaskManager.DTOs.TaskManager;
 using TaskManager.Helper;
 using TaskManager.IServices;
@@ -20,6 +21,7 @@ namespace TaskManager.Controllers
 
 
         [HttpPost]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> CreateTenant([FromBody] CreateTenantDTO request)
         { 
             var logId = Guid.NewGuid().ToString();
@@ -45,6 +47,7 @@ namespace TaskManager.Controllers
         }
 
         [HttpGet]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> GetAllTenants()
         {
             var logId = Guid.NewGuid().ToString();

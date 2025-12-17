@@ -106,6 +106,7 @@ builder.Services.AddScoped<ITenantService, TenantService>();
 builder.Services.AddScoped<IDashboardService, DashboardService>();
 builder.Services.AddScoped<IRefreshTokenService, RefreshTokenService>();
 builder.Services.AddScoped<IAIChatService,AIChatService>();
+builder.Services.AddScoped<IEmailService,EmailService>();
 builder.Services.AddScoped<CurrentUserService>();
 
 //register http client 

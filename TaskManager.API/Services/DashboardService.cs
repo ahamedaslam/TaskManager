@@ -1,8 +1,6 @@
-﻿using Microsoft.Extensions.Logging;
-using TaskManager.DTOs.DashBoard;
+﻿using TaskManager.DTOs.DashBoard;
 using TaskManager.Helper;
 using TaskManager.Interface;
-using TaskManager.Models.Response;
 using TaskManager.Models.Responses;
 using TaskManager.Services.Interfaces;
 

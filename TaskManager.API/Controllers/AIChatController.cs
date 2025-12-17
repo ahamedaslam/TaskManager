@@ -1,7 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
 using TaskManager.DTOs.AIChat;
-using TaskManager.Helper;
 using TaskManager.Models.Response;
 using TaskManager.Services.Interfaces;
 
