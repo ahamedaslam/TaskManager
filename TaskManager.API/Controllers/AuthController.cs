@@ -2,6 +2,7 @@
 using TaskManager.DTOs.Auth;
 using TaskManager.Helper;
 using TaskManager.InterfaceService;
+using TaskManager.Models.Response;
 using TaskManager.Services.Interfaces;
 
 //testing
@@ -18,66 +19,50 @@ namespace TaskManager.Controllers
 
         //You are not creating objects, you are receiving already-created objects from the DI container through the constructor.
 
-        public AuthController(IAuthService authService, ILogger<AuthController> logger,IRefreshTokenService refreshTokenService)
+        public AuthController(IAuthService authService, ILogger<AuthController> logger, IRefreshTokenService refreshTokenService)
         {
             _authService = authService;
             _logger = logger;
             _refreshTokenService = refreshTokenService;
         }
 
+
         [HttpPost("register")]
-        public async Task<ActionResult> RegisterUser(RegisterRequestDTO dto)
+        public async Task<ActionResult<Response>> RegisterUser(RegisterRequestDTO dto)
         {
             var logId = Guid.NewGuid().ToString();
+            _logger.LogInformation("[{logId}] Registration attempt with Username: {Username}", logId, dto.Username);
+
             if (dto == null || string.IsNullOrWhiteSpace(dto.Username) || string.IsNullOrWhiteSpace(dto.Password))
             {
-                _logger.LogWarning("[{logId}] Invalid registration request: {Request}", logId, dto);
+                _logger.LogWarning("Invalid request received for registering new user");
                 return BadRequest(ResponseHelper.BadRequest("Invalid registration data."));
             }
-            _logger.LogInformation("[{logId}] RegisterUser called with Username: {Username}, TenantId: {TenantId}",logId, dto.Username, dto.TenantId);
-
-            try
-            {
-                var response = await _authService.RegisterUserAsync(dto,logId);
-                //_logger.LogInformation("[{logId}] User registration completed for Username: {Username} with ResponseCode: {ResponseCode}",logId, dto.Username, response.ResponseCode);
-                return StatusCode(HttpStatusMapper.GetHttpStatusCode(response.ResponseCode), response);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "[{logId}] Error occurred during user registration for Username: {Username}",logId,dto.Username);
-
-   
-                var errorResponse = ResponseHelper.ServerError();
-                return StatusCode(HttpStatusMapper.GetHttpStatusCode(errorResponse.ResponseCode), errorResponse);
-            }
+            _logger.LogDebug("[{logId}] Entering RegisterUserAsync with Username: {Username}", logId, dto.Username);
+            var response = await _authService.RegisterUserAsync(dto, logId);
+            _logger.LogInformation("[{logId}] Registration Successfull for Username: {Username}", logId, dto.Username);
+            return StatusCode(HttpStatusMapper.GetHttpStatusCode(response.ResponseCode), response);
         }
+
+
 
 
         [HttpPost("login")]
         public async Task<ActionResult> LoginUser(LoginRequestDTO dto)
         {
-            var logId = Guid.NewGuid().ToString();  
-            _logger.LogInformation("[{logId}] Login attempt with Username: {Username}", logId,dto.Username) ;
-            try
-            {
-                if (dto == null || string.IsNullOrWhiteSpace(dto.Username) || string.IsNullOrWhiteSpace(dto.Password))
-                {
-                    _logger.LogWarning("[{logId}] Invalid login request: {Request}", logId, dto);
-                    return BadRequest(ResponseHelper.BadRequest("Invalid login data."));
-                }
-                _logger.LogDebug("[{logId}] Entering LoginUserAsync with Username: {Username}", logId, dto.Username);
-                var response = await _authService.LoginUserAsync(dto,logId);
-                _logger.LogInformation("[{logId}] Login Successfull for Username: {Username} with ResponseCode: {ResponseCode}",logId, dto.Username, response.ResponseCode);
-                return Ok(response);
+            var logId = Guid.NewGuid().ToString();
+            _logger.LogInformation("[{logId}] Login attempt with Username: {Username}", logId, dto.Username);
 
-            }
-            catch (Exception ex)
+            if (dto == null || string.IsNullOrWhiteSpace(dto.Username) || string.IsNullOrWhiteSpace(dto.Password))
             {
-         
-                _logger.LogError(ex, "[{logId}] Error occurred during token refresh", logId);
-                var errorResponse = ResponseHelper.ServerError();
-                return StatusCode(HttpStatusMapper.GetHttpStatusCode(errorResponse.ResponseCode), errorResponse);
+                _logger.LogWarning("[{logId}] Invalid login request: {Request}", logId, dto);
+                return BadRequest(ResponseHelper.BadRequest("Invalid login data."));
             }
+            _logger.LogDebug("[{logId}] Entering LoginUserAsync with Username: {Username}", logId, dto.Username);
+            var response = await _authService.LoginUserAsync(dto, logId);
+            _logger.LogInformation("[{logId}] Login Successfull for Username: {Username} ", logId, dto.Username);
+            return StatusCode(HttpStatusMapper.GetHttpStatusCode(response.ResponseCode), response);
+
         }
 
 
@@ -85,48 +70,32 @@ namespace TaskManager.Controllers
         public async Task<ActionResult> VerifyOtp([FromBody] VerifyOtpRequestDTO dto)
         {
             var logId = Guid.NewGuid().ToString();
-
+            _logger.LogInformation("[{logId}] OTP verification attempt for User: {Username}", logId, dto.UserName);
             if (string.IsNullOrWhiteSpace(dto.UserName) || string.IsNullOrWhiteSpace(dto.OTP))
             {
-                _logger.LogWarning("[{logId}] OTP verification failed due to missing data: {DTO}", logId, dto);
+                _logger.LogWarning("[{logId}] OTP-Validation failed due to missing data: {DTO}", logId, dto);
                 return BadRequest(ResponseHelper.BadRequest("Username and OTP are required."));
             }
-
-            try
-            {
-                _logger.LogInformation("[{logId}] OTP verification attempt for user: {Username}", logId, dto.UserName);
-
-                var response = await _authService.VerifyOtpAsync(dto, logId);
-                return StatusCode(HttpStatusMapper.GetHttpStatusCode(response.ResponseCode), response);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "[{logId}] Error occurred during OTP verification for user: {Username}", logId, dto.UserName);
-                var errorResponse = ResponseHelper.ServerError();
-                return StatusCode(HttpStatusMapper.GetHttpStatusCode(errorResponse.ResponseCode), errorResponse);
-            }
+            _logger.LogInformation("[{logId}] OTP verification attempt for user: {Username}", logId, dto.UserName);
+            var response = await _authService.VerifyOtpAsync(dto, logId);
+            _logger.LogInformation("[{logId}] OTP-Validation Successfull for Username: {Username}", logId, dto.UserName);
+            return StatusCode(HttpStatusMapper.GetHttpStatusCode(response.ResponseCode), response);
         }
 
 
         [HttpPost("refresh-token")]
         public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenRequest request)
         {
-            try
+            var logId = Guid.NewGuid().ToString();
+            _logger.LogInformation("[{logId}] Creating refresh token for User",logId);
+            if (string.IsNullOrWhiteSpace(request.AccessToken) || string.IsNullOrWhiteSpace(request.RefreshToken))
             {
-                if (string.IsNullOrWhiteSpace(request.AccessToken) || string.IsNullOrWhiteSpace(request.RefreshToken))
-                {
-                    return BadRequest(ResponseHelper.BadRequest("Access token and refresh token are required."));
-                }
-                var response = await _refreshTokenService.RefreshAsync(request.AccessToken, request.RefreshToken);
-                return Ok(response);
+                return BadRequest(ResponseHelper.BadRequest("Access token and refresh token are required."));
             }
-            catch (Exception ex)
-            {
-                var logId = Guid.NewGuid().ToString();
-                _logger.LogError(ex, "[{logId}] Error occurred during token refresh", logId);
-                var errorResponse = ResponseHelper.ServerError();
-                return StatusCode(HttpStatusMapper.GetHttpStatusCode(errorResponse.ResponseCode), errorResponse);
-            }
+            var response = await _refreshTokenService.RefreshAsync(request.AccessToken, request.RefreshToken,logId);
+            _logger.LogInformation("[{logId}] refresh token created Successfully", logId);
+            return StatusCode(HttpStatusMapper.GetHttpStatusCode(response.ResponseCode), response);
+
         }
     }
 

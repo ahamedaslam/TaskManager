@@ -13,9 +13,9 @@ namespace TaskManager.Services
         private readonly AuthDBContext _dBContext;
         private readonly HttpClient _httpClient;
         private readonly ILogger<AIChatService> _logger;
-   
 
-        public AIChatService(AuthDBContext dBContext, HttpClient httpClient,ILogger<AIChatService> logger)
+
+        public AIChatService(AuthDBContext dBContext, HttpClient httpClient, ILogger<AIChatService> logger)
         {
             _dBContext = dBContext;
             _httpClient = httpClient;
@@ -23,114 +23,119 @@ namespace TaskManager.Services
 
         }
 
-        public async Task<string> GetAIResponseAsync(string message, string tenantId, string userId)
+        public async Task<Response> GetAIResponseAsync(string message, string tenantId, string userId,string logId)
         {
-            _logger.LogInformation(
-                "AI chat request started. UserId={UserId}, TenantId={TenantId}",
-                userId, tenantId);
-
-
-            // Load chat history
-            // 1️ Load chat history
-
-            _logger.LogDebug("Loading last 10 chat messages");
-
-            var history = await _dBContext.ChatHistories
-                .Where(c => c.UserId == userId && c.TenantId == tenantId)
-                .OrderByDescending(c => c.CreatedAt)
-                .Take(10)
-                .OrderBy(c => c.CreatedAt)
-                .ToListAsync();
-
-            _logger.LogInformation("Loaded {Count} chat history records", history.Count);
-
-            // Load tasks
-            _logger.LogDebug("Loading user tasks");
-
-            var tasks = await _dBContext.TaskItems
-                .Where(t => t.UserId == userId && t.TenantId == tenantId)
-                .Select(t => $"{t.Title} - {(t.IsCompleted ? "Completed" : "Pending")}")
-                .ToListAsync();
-
-            _logger.LogInformation("Loaded {Count} tasks for AI context", tasks.Count);
-
-            //  Build prompt
-            var promptBuilder = new StringBuilder();
-            promptBuilder.AppendLine("User Tasks:");
-            foreach (var task in tasks)
-                promptBuilder.AppendLine($"- {task}");
-
-            promptBuilder.AppendLine("\nConversation:");
-            foreach (var msg in history)
-                promptBuilder.AppendLine($"{msg.Role}: {msg.Message}");
-
-            promptBuilder.AppendLine($"user: {message}");
-            promptBuilder.AppendLine("assistant:");
-
-            _logger.LogDebug("Prompt built successfully");
-
-            var payload = new
+            try
             {
-                model = "deepseek-v3.1:671b-cloud",
-                prompt = promptBuilder.ToString(),
-                stream = false
-            };
+                _logger.LogInformation("[{logId}] AI chat request started. UserId={UserId}, TenantId={TenantId}", logId,userId, tenantId);
+                
+                // Load chat history
+                // Load chat history
 
-            // Call Ollama
-            _logger.LogInformation("Sending request to Ollama");
+                _logger.LogDebug("[{logId}] Loading last 10 chat messages",logId);
 
-            var response = await _httpClient.PostAsJsonAsync("http://localhost:11434/api/generate", payload);
+                var history = await _dBContext.ChatHistories
+                    .Where(c => c.UserId == userId && c.TenantId == tenantId)
+                    .OrderByDescending(c => c.CreatedAt)
+                    .Take(10)
+                    .OrderBy(c => c.CreatedAt)
+                    .ToListAsync();
 
-            if (!response.IsSuccessStatusCode)
-            {
-                _logger.LogError(
-                    "Ollama call failed. StatusCode={StatusCode}",
-                    response.StatusCode);
+                _logger.LogInformation("[{logId}] Loaded {Count} chat history records", logId, history.Count);
 
-                throw new ApplicationException("AI service failed");
-            }
+                // Load tasks
+                _logger.LogDebug("[{logId}] Loading user tasks", logId);
 
-            var rawJson = await response.Content.ReadAsStringAsync();
+                var tasks = await _dBContext.TaskItems
+                    .Where(t => t.UserId == userId && t.TenantId == tenantId)
+                    .Select(t => $"{t.Title} - {(t.IsCompleted ? "Completed" : "Pending")}")
+                    .ToListAsync();
 
-            var ollamaResult = System.Text.Json.JsonSerializer.Deserialize<AiResponse>( rawJson,
-                new System.Text.Json.JsonSerializerOptions
+                _logger.LogInformation("[{logId}] Loaded {Count} tasks for AI context", logId, tasks.Count);
+
+                //  Build prompt
+                var promptBuilder = new StringBuilder();
+                promptBuilder.AppendLine("User Tasks:");
+                foreach (var task in tasks)
+                    promptBuilder.AppendLine($"- {task}");
+
+                promptBuilder.AppendLine("\nConversation:");
+                foreach (var msg in history)
+                    promptBuilder.AppendLine($"{msg.Role}: {msg.Message}");
+
+                promptBuilder.AppendLine($"user: {message}");
+                promptBuilder.AppendLine("assistant:");
+
+                _logger.LogDebug("[{logId}] Prompt built successfully", logId);
+
+                var payload = new
                 {
-                    PropertyNameCaseInsensitive = true
-                });
+                    model = "deepseek-v3.1:671b-cloud",
+                    prompt = promptBuilder.ToString(),
+                    stream = false
+                };
 
-            var aiMessage = CleanAi.CleanAiText(ollamaResult?.Response ?? "No response from AI");
+                // Call Ollama
+                _logger.LogInformation("[{logId}] Sending request to Ollama", logId);
 
-            _logger.LogInformation("AI response received successfully");
+                var response = await _httpClient.PostAsJsonAsync("http://localhost:11434/api/generate", payload);
 
-            // Save chat history
-            _logger.LogDebug("Saving chat history to database");
-
-            _dBContext.ChatHistories.AddRange(
-                new ChatHistory
+                if (!response.IsSuccessStatusCode)
                 {
-                    UserId = userId,
-                    TenantId = tenantId,
-                    Role = "user",
-                    Message = message,
-                    CreatedAt = DateTime.UtcNow
-                },
-                new ChatHistory
-                {
-                    UserId = userId,
-                    TenantId = tenantId,
-                    Role = "assistant",
-                    Message = aiMessage,
-                    CreatedAt = DateTime.UtcNow
+                    _logger.LogError("[{logId}] Ollama call failed. StatusCode={StatusCode}", logId, response.StatusCode);
+
+                    throw new ApplicationException("AI service failed");
                 }
-            );
 
-            await _dBContext.SaveChangesAsync();
+                var rawJson = await response.Content.ReadAsStringAsync();
 
-            _logger.LogInformation(
-                "Chat history saved successfully. UserId={UserId}",
-                userId);
+                var ollamaResult = System.Text.Json.JsonSerializer.Deserialize<AiResponse>(rawJson,
+                    new System.Text.Json.JsonSerializerOptions
+                    {
+                        PropertyNameCaseInsensitive = true
+                    });
 
-            return aiMessage;
+                var aiMessage = CleanAi.CleanAiText(ollamaResult?.Response ?? "No response from AI");
+
+                _logger.LogInformation("[{logId}] AI response received successfully", logId);
+
+                // Save chat history
+                _logger.LogDebug("[{logId}] Saving chat history to database", logId);
+
+                _dBContext.ChatHistories.AddRange(
+                    new ChatHistory
+                    {
+                        UserId = userId,
+                        TenantId = tenantId,
+                        Role = "user",
+                        Message = message,
+                        CreatedAt = DateTime.UtcNow
+                    },
+                    new ChatHistory
+                    {
+                        UserId = userId,
+                        TenantId = tenantId,
+                        Role = "assistant",
+                        Message = aiMessage,
+                        CreatedAt = DateTime.UtcNow
+                    }
+                );
+
+                await _dBContext.SaveChangesAsync();
+
+                _logger.LogInformation("[{logId}] Chat history saved successfully. UserId={UserId}", logId,userId);
+
+                return new Response
+                {
+                    ResponseCode = 0,
+                    ResponseDescription = "Success",
+                    ResponseDatas = aiMessage
+                };
+            }
+            catch (Exception)
+            {
+                throw;
+            }
         }
     }
 }

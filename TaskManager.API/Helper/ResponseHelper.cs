@@ -1,8 +1,15 @@
-﻿using TaskManager.Models.Response;
+﻿using System;
+using TaskManager.Models.Response;
 using TaskManager.Models.Responses;
 
 namespace TaskManager.Helper
 {
+//Controllers → return Success(...)
+
+//Services → throw exceptions
+
+//Middleware → converts exceptions → ResponseHelper.*
+   
     public static class ResponseHelper
     {
        // Non-generic success
@@ -39,16 +46,6 @@ namespace TaskManager.Helper
             };
         }
 
-        // Generic bad request
-        //public static Response<T> BadRequest<T>(string message = "Oops! Something seems off with your request. Please check and try again.")
-        //{
-        //    return new Response<T>
-        //    {
-        //        ResponseCode = 1001,
-        //        ResponseDescription = message
-        //    };
-        //}
-
         public static Response Unauthorized(string message = "Access denied..!!")
         {
 
@@ -59,15 +56,7 @@ namespace TaskManager.Helper
             };
         }
 
-        //public static Response<T> Unauthorized<T>(string message = "Access denied..!!")
-        //{
-        //    return new Response<T>
-        //    {
-        //        ResponseCode = 1002,
-        //        ResponseDescription = message
-        //    };
-        //}
-
+      
         //It creates a string called fullMessage that either includes a log ID (if provided) or just the message.
         public static Response NotFound(string message = "We couldn’t find what you’re looking for.")
         {// shorthand for an if-else statement.
@@ -97,15 +86,7 @@ namespace TaskManager.Helper
             };
         }
 
-        //public static Response<T> Conflict<T>(string message = "A conflict occurred with your request.")
-        //{
-        //    return new Response<T>
-        //    {
-        //        ResponseCode = 1004,
-        //        ResponseDescription = message
-        //    };
-        //}
-
+       
         public static Response Unauthenticated(string message = "Authentication required. Please log in.")
         {
             return new Response
@@ -114,15 +95,6 @@ namespace TaskManager.Helper
                 ResponseDescription = message
             };
         }
-
-        //public static Response<T> Unauthenticated<T>(string message = "Authentication required. Please log in.")
-        //{
-        //    return new Response<T>
-        //    {
-        //        ResponseCode = 1007,
-        //        ResponseDescription = message
-        //    };
-        //}
 
         public static Response Unprocessable(string message = "Unprocessable request.")
         {
@@ -133,14 +105,7 @@ namespace TaskManager.Helper
             };
         }
 
-        //public static Response<T> Unprocessable<T>(string message = "Unprocessable request.")
-        //{
-        //    return new Response<T>
-        //    {
-        //        ResponseCode = 1005,
-        //        ResponseDescription = message
-        //    };
-        //}
+       
 
         public static Response ServerError(string message = "Something went wrong on our end. Please try again later.")
         {

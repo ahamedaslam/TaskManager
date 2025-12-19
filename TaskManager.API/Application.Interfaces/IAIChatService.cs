@@ -1,7 +1,9 @@
-﻿namespace TaskManager.Services.Interfaces
+﻿using TaskManager.Models.Response;
+
+namespace TaskManager.Services.Interfaces
 {
     public interface IAIChatService
     {
-        Task<string> GetAIResponseAsync(string message,string tenantId,string userId);
+        Task<Response> GetAIResponseAsync(string message,string tenantId,string userId,string logId);
     }
 }

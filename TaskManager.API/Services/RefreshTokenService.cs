@@ -57,7 +57,7 @@ namespace TaskManager.Services
         }
 
 
-        public async Task<Response> RefreshAsync(string accessToken, string refreshToken)
+        public async Task<Response> RefreshAsync(string accessToken, string refreshToken, string logId)
         {
             try
             {
@@ -91,7 +91,8 @@ namespace TaskManager.Services
             }
             catch (Exception ex)
             {
-              return ResponseHelper.ServerError();
+                _logger.LogError(ex, "[{logId}] Unexpected error during creating refresh token", logId);
+                throw;
             }
         }
 

@@ -5,7 +5,6 @@ using Microsoft.AspNetCore.Authorization;
 
 namespace TaskManager.Controllers
 {
-    [Authorize(Roles = "Admin")]
     [ApiController]
     [Route("api/[controller]")]
     public class DashboardController : ControllerBase
@@ -20,37 +19,32 @@ namespace TaskManager.Controllers
             _currentUserService = currentUserService;
         }
 
+        [Authorize(Roles = "Admin,Normal")]
         [HttpGet("stats")]
         public async Task<IActionResult> GetDashboardStats()
         {
             var logId = Guid.NewGuid().ToString();
-            try
+
+            var tenantId = _currentUserService.GetTenantId;
+
+            if (string.IsNullOrEmpty(tenantId))
             {
-                var tenantId = _currentUserService.GetTenantId;
-
-                if (string.IsNullOrEmpty(tenantId))
-                {
-                    _logger.LogWarning("[{LogId}] Missing TenantId in claims.", logId);
-                    return Unauthorized(ResponseHelper.Unauthorized("TenantId not found in claims."));
-                }
-                _logger.LogDebug("[{LogId}] Entering GetDashboardStats with TenantId: {TenantId}", logId, tenantId);
-                var result = await _dashboardService.GetDashboardStatsAsync(tenantId,logId);
-
-                if (result == null)
-                {
-                    _logger.LogWarning("[{LogId}] No dashboard stats found for TenantId: {TenantId}", logId, tenantId);
-                    return NotFound(ResponseHelper.NotFound($"No dashboard stats found for TenantId: {tenantId}"));
-                }
-
-                _logger.LogInformation("[{LogId}] Successfully fetched dashboard stats for TenantId: {TenantId}", logId, tenantId);
-                return Ok(result);
+                _logger.LogWarning("[{LogId}] Missing TenantId in claims.", logId);
+                return Unauthorized(ResponseHelper.Unauthorized("TenantId not found in claims."));
             }
-            catch (Exception ex)
+            _logger.LogDebug("[{LogId}] Entering GetDashboardStats with TenantId: {TenantId}", logId, tenantId);
+            var result = await _dashboardService.GetDashboardStatsAsync(tenantId, logId);
+
+            if (result == null)
             {
-                var error = ResponseHelper.ServerError(logId);
-                return StatusCode(HttpStatusMapper.GetHttpStatusCode(error.ResponseCode), error);
-
+                _logger.LogWarning("[{LogId}] No dashboard stats found for TenantId: {TenantId}", logId, tenantId);
+                return NotFound(ResponseHelper.NotFound($"No dashboard stats found for TenantId: {tenantId}"));
             }
+
+            _logger.LogInformation("[{LogId}] Successfully fetched dashboard stats for TenantId: {TenantId}", logId, tenantId);
+            return StatusCode(HttpStatusMapper.GetHttpStatusCode(result.ResponseCode), result);
+
+
         }
     } 
 }

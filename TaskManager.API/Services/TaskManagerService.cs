@@ -11,14 +11,13 @@ namespace TaskManager.Services
     {
         private readonly ITaskManagerRepo _repo;
         private readonly ILogger<TaskManagerService> _logger;
-        private readonly IMapper _mapper; // Assuming you have a mapper for DTO to Entity conversion
         private readonly CurrentUserService _currentUserService;
 
         public TaskManagerService(ITaskManagerRepo repo, ILogger<TaskManagerService> logger, CurrentUserService currentUserService)
         {
             _repo = repo;
             _logger = logger;
-            _currentUserService = currentUserService; // Assuming you have a service to get current user details
+            _currentUserService = currentUserService;
             //structured logging
             //With structured logging, the log message is not formatted unless needed (e.g., based on log level).
         }
@@ -27,9 +26,6 @@ namespace TaskManager.Services
 
         public async Task<Response> GetAllTasksAsync(string tenantId, string userId, string? filterOn, string? filterQuery, string? sortBy, bool isAscending, int pageNumber, int pageSize, string logId)
         {
-
-            //var (tenantId, role, userId) = UserContextHelper.GetContext(_currentUserService);
-
             _logger.LogInformation("[{logId}] Started to retreive All tasks", logId);
             try
             {
@@ -66,7 +62,7 @@ namespace TaskManager.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, "[{logId}] Error occurred while fetching tasks", logId);
-                return ResponseHelper.ServerError();
+                throw;
             }
         }
 
@@ -90,7 +86,7 @@ namespace TaskManager.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, "[{logId}] Error occurred while retrieving - TaskId: {TaskId} & UserId: {UserId}", logId, request.taskId, userId);
-                return ResponseHelper.ServerError();
+                throw;        
             }
         }
 
@@ -130,7 +126,7 @@ namespace TaskManager.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, "[{logId}] Error occurred while creating tasks - UserId: {UserId}", logId, userId);
-                return ResponseHelper.ServerError();
+                throw;
             }
         }
 
@@ -158,7 +154,7 @@ namespace TaskManager.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, "[{logId}] Error occurred while updating task - TaskId: {TaskId} & UserId: {UserId}", logId, request.Id, request.UserId);
-                return ResponseHelper.ServerError();
+                throw;
             }
         }
 
@@ -183,7 +179,7 @@ namespace TaskManager.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, "[{logId}] Error occurred while deleting task with ID: {TaskId}", logId, request.taskId);
-                return ResponseHelper.ServerError();
+                throw;
             }
         }
 
@@ -210,7 +206,7 @@ namespace TaskManager.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, "[{logId}] Error occurred while updating task status for TaskId: {TaskId}", logId, taskId);
-                return ResponseHelper.ServerError();
+                throw;
             }
         }
     }

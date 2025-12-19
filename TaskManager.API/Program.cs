@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Authentication.JwtBearer;
+﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -19,6 +19,11 @@ using TaskManager.Services;
 using TaskManager.Services.Interfaces;
 
 var builder = WebApplication.CreateBuilder(args);
+
+//Request–Response Pipeline
+//Request → Middleware → Controller
+//Response ← Middleware ← Controller
+//Order matters — middleware executes in the sequence it’s registered.
 
 #region ================== Serilog Configuration ==================
 Log.Logger = new LoggerConfiguration()
@@ -93,11 +98,7 @@ builder.Services.AddStackExchangeRedisCache(options =>
 
 #endregion
 
-
-#region ================== DI   Services & Repositories Registrations ==================
-
-// AutoMapper
-//builder.Services.AddAutoMapper(typeof(AutoMapperProfile));
+#region ========= DI Services & Repositories Registrations =========
 
 // App Services
 builder.Services.AddScoped<TaskManagerService>();
@@ -109,6 +110,7 @@ builder.Services.AddScoped<IAIChatService,AIChatService>();
 builder.Services.AddScoped<IEmailService,EmailService>();
 builder.Services.AddScoped<CurrentUserService>();
 
+//to communicate with APIs over HTTP/HTTPS.
 //register http client 
 builder.Services.AddHttpClient();
 
@@ -187,7 +189,7 @@ builder.Services.AddAuthentication(options =>
 #region ================== Configure CORS ==================
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowFrontend",
+    options.AddPolicy("AllowClientFrom",
         policy =>
         {
             policy.WithOrigins(
@@ -202,7 +204,7 @@ builder.Services.AddCors(options =>
 
 #endregion
 
-#region ================== App Build & Middleware ==================
+#region ================== Custom Global Exception Handler Middleware (e.g. 400, 403, 404) ==================
 
 var app = builder.Build();
 
@@ -236,20 +238,15 @@ app.UseStatusCodePages(async context =>
         await response.WriteAsync(result);
 });
 
+#endregion
 
+#region ================== Request Middleware Pipeline ==================
 
-// Request pipeline
-//app.UseHttpsRedirection();
-
-app.UseCors("AllowFrontend");
+app.UseCors("AllowClientFrom");
 app.UseAuthentication(); // Validates JWT
 app.UseAuthorization();  // Applies role policies, [Authorize]
-
-// Maps controller routes
-app.MapControllers();
-
-// Run the application
-app.Run();
+app.MapControllers();// Maps controller routes
+app.Run();// Run the application
 
 // Optional: Remove all default logging providers
 #endregion

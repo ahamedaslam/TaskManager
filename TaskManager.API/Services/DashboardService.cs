@@ -31,12 +31,12 @@ public class DashboardService : IDashboardService
             }
 
             _logger.LogInformation("[{LogId}] Successfully fetched dashboard stats for TenantId: {TenantId}", logId, tenantId);
-            return ResponseHelper.SuccessGeneric<DashboardStatsDto>(stats, "Dashboard stats fetched successfully.");
+            return ResponseHelper.SuccessGeneric<DashboardStatsDto>(stats);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "[{LogId}] Exception while fetching dashboard stats for TenantId: {TenantId}", logId, tenantId);
-            return ResponseHelper.ServerError<DashboardStatsDto>();
+            throw;
         }
     }
 }

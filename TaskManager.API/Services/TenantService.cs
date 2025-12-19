@@ -42,7 +42,7 @@ namespace TaskManager.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, "[{logId}] Error while creating tenant.",logId);
-             return ResponseHelper.ServerError();
+                 throw;
             }
         }
 

@@ -1,12 +1,9 @@
-﻿using Azure.Core;
-using Microsoft.AspNetCore.Mvc;
-using Serilog;
-using System;
+﻿using System.Security.Authentication;
 using System.Text.Json;
 using TaskManager.Helper;
-using static System.Net.WebRequestMethods;
-using static System.Runtime.InteropServices.JavaScript.JSType;
+using TaskManager.Models.Response;
 
+//Centralized logging
 namespace TaskManager.Middleware
 {
 
@@ -43,6 +40,7 @@ namespace TaskManager.Middleware
 
         public async Task InvokeAsync(HttpContext context)
         {
+            _logger.LogInformation("ExceptionHandleMiddleware initialized.");
             _logger.LogDebug("Handling request: {Method} {Path}", context.Request.Method, context.Request.Path);
 
             try
@@ -52,19 +50,47 @@ namespace TaskManager.Middleware
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "[GlobalException] Unhandled exception occurred.");
-                _logger.LogWarning("Returning 500 Internal Server Error for request: {Method} {Path}", context.Request.Method, context.Request.Path);
+                _logger.LogError(ex, "[GlobalException] Unhandled exception occurred");
 
                 context.Response.ContentType = "application/json";
-                context.Response.StatusCode = StatusCodes.Status500InternalServerError;
 
-                var errorResponse = ResponseHelper.ServerError();
-                var json = JsonSerializer.Serialize(errorResponse);
+                (int statusCode, Response response) = ex switch
+                {
+                    ArgumentException => (
+                        StatusCodes.Status400BadRequest,
+                        ResponseHelper.BadRequest(ex.Message) //Bad request
+                    ),
 
-                await context.Response.WriteAsync(json);
+                    UnauthorizedAccessException => (
+                        StatusCodes.Status403Forbidden, //un-authorized
+                        ResponseHelper.Unauthorized()
+                    ),
 
-                _logger.LogInformation("Error response sent to client.");
+                    AuthenticationException => (
+                        StatusCodes.Status401Unauthorized, //un-authenticated
+                        ResponseHelper.Unauthenticated()
+                    ),
+
+                    KeyNotFoundException => (
+                        StatusCodes.Status404NotFound,
+                        ResponseHelper.NotFound(ex.Message) //resource-not found
+                    ),
+
+                    InvalidOperationException => (
+                        StatusCodes.Status409Conflict,
+                        ResponseHelper.Conflict(ex.Message)
+                    ),
+
+                    _ => (
+                        StatusCodes.Status500InternalServerError,
+                        ResponseHelper.ServerError()
+                    )
+                };
+
+                context.Response.StatusCode = statusCode;
+                await context.Response.WriteAsync(JsonSerializer.Serialize(response));
             }
+
         }
     }   
 
