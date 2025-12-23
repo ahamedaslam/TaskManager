@@ -3,6 +3,7 @@ using TaskManager.DTOs.Auth;
 using TaskManager.Helper;
 using TaskManager.InterfaceService;
 using TaskManager.Models.Response;
+using TaskManager.MultiTenant.DTOs;
 using TaskManager.Services.Interfaces;
 
 //testing
@@ -95,6 +96,19 @@ namespace TaskManager.Controllers
             var response = await _refreshTokenService.RefreshAsync(request.AccessToken, request.RefreshToken,logId);
             _logger.LogInformation("[{logId}] refresh token created Successfully", logId);
             return StatusCode(HttpStatusMapper.GetHttpStatusCode(response.ResponseCode), response);
+
+        }
+
+        [HttpPost("logout")]
+        public async Task<ActionResult<Response>> Logout([FromBody] LogoutRequestDTO dto)
+        {
+            var logId = Guid.NewGuid().ToString();
+            _logger.LogInformation("[{logId}] Logout attempt received", logId);
+            if (!ModelState.IsValid)
+                return BadRequest(ResponseHelper.NotFound("Token not found"));
+            var respone = await _authService.LogoutAsync(dto.RefreshToken,logId);
+            _logger.LogInformation("[{logId}] Logout successful", logId);
+            return StatusCode(HttpStatusMapper.GetHttpStatusCode(respone.ResponseCode), respone);
 
         }
     }

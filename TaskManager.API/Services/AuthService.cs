@@ -12,6 +12,7 @@ using TaskManager.IRepository;
 using TaskManager.Models;
 using TaskManager.Models.Response;
 using TaskManager.MultiTenant.Helper;
+using TaskManager.MultiTenant.Utils;
 using TaskManager.Services.Interfaces;
 
 public class AuthService : IAuthService
@@ -23,10 +24,11 @@ public class AuthService : IAuthService
     private readonly IConfiguration _configuration;
     private readonly IRefreshTokenRepository _refreshTokenRepository;
     private readonly IEmailService _emailService;
+    private readonly RedisService _rediService;
 
     // private readonly IMapper _mapper; // Assuming you have a mapper for DTO to Entity conversion
 
-    public AuthService(UserManager<ApplicationUser> userManager, ITokenRepository tokenRepository, IRefreshTokenRepository refreshTokenRepository, IEmailService emailService, IConfiguration configuration, ILogger<AuthService> logger, AuthDBContext context)
+    public AuthService(UserManager<ApplicationUser> userManager, ITokenRepository tokenRepository, IRefreshTokenRepository refreshTokenRepository, IEmailService emailService, IConfiguration configuration, ILogger<AuthService> logger, AuthDBContext context, RedisService rediService)
     {
         _userManager = userManager;
         _tokenRepository = tokenRepository;
@@ -35,6 +37,7 @@ public class AuthService : IAuthService
         _refreshTokenRepository = refreshTokenRepository;
         _emailService = emailService;
         _configuration = configuration;
+        _rediService = rediService;
         // _mapper = mapper;
 
     }
@@ -120,7 +123,7 @@ public class AuthService : IAuthService
             _logger.LogInformation("[{logId}] started generating OTP for user: {username} ", logId, req.Username);
             var otp = RandomNumberGenerator.GetInt32(100000, 999999).ToString();
 
-            identityUser.OTP = OtpHashHelper.HashOtp(otp);
+            identityUser.OTP = OtpHashUtil.HashOtp(otp);
             var otpExpiryMinutes = int.Parse(_configuration["OTP_EXPIRY_MINUTES"]);
             identityUser.OTPExpiry = DateTime.Now.AddMinutes(otpExpiryMinutes);
             await _userManager.UpdateAsync(identityUser);
@@ -128,8 +131,7 @@ public class AuthService : IAuthService
 
             var emailBody = EmailTemplateHelper.OtpTemplate(userName: req.Username, otp: otp, expiryMinutes: otpExpiryMinutes, appName: "TaskManagerMultiTenant");
 
-            _ = Task.Run(() => _emailService.SendEmailAsync(req.Username, "Verify Your Account – OTP Inside", emailBody)
-            );
+            _ = Task.Run(() => _emailService.SendEmailAsync(req.Username, "Verify Your Account – OTP Inside", emailBody));
 
 
             _logger.LogInformation("[{logId}] OTP sent to email: {Email}", logId, req.Username);
@@ -151,12 +153,12 @@ public class AuthService : IAuthService
             if (user == null)
                 return ResponseHelper.NotFound("User not found");
 
-            if (user.OTPExpiry == null || user.OTPExpiry < DateTime.UtcNow)
+            if (user.OTPExpiry == null || user.OTPExpiry < DateTime.Now)
             {
                 return ResponseHelper.BadRequest("OTP has expired.");
             }
 
-            var inputOtpHash = OtpHashHelper.HashOtp(dto.OTP);
+            var inputOtpHash = OtpHashUtil.HashOtp(dto.OTP);
 
             if (user.OTP != inputOtpHash)
             {
@@ -177,6 +179,9 @@ public class AuthService : IAuthService
             var expiryMinutes = int.Parse(_configuration["JWT_ACCESS_TOKEN_EXPIRY_MINUTES"]);
             var expiry = DateTime.Now.AddMinutes(expiryMinutes);
             var refreshToken = await _refreshTokenRepository.GenerateAsync(user);
+            
+            //Store in Redis
+            await _rediService.StoreRefreshTokenAsync(user.Id, refreshToken.Token, refreshToken.Expires);
 
             return new Response
             {
@@ -204,5 +209,34 @@ public class AuthService : IAuthService
             throw;
         }
 
+    }
+
+    public async Task<Response> LogoutAsync(string refreshToken,string logId)
+    {
+        try
+        {
+            var token = await _refreshTokenRepository.GetByTokenAsync(refreshToken);
+
+            if (token == null)
+            {
+                _logger.LogWarning("Logout attempt with invalid refresh token: {Refresh}", refreshToken);
+                return ResponseHelper.NotFound("Invalid refresh token");
+            }
+
+            if (token.Revoked != null)
+            {
+                _logger.LogInformation("Refresh token already revoked for token: {Refresh}", refreshToken);
+                return ResponseHelper.Success("Refresh token already revoked");
+            }
+
+            await _refreshTokenRepository.InvalidateAsync(token);
+
+            return ResponseHelper.Success("Logged out successfully");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error during logout for refresh token: {Refresh}", refreshToken);
+            throw;
+        }
     }
 }

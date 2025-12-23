@@ -1,9 +1,11 @@
 ﻿using System.Security.Cryptography;
 using System.Text;
 
-namespace TaskManager.MultiTenant.Helper
+namespace TaskManager.MultiTenant.Utils
 {
-    public static class OtpHashHelper
+
+    //
+    public static class OtpHashUtil
     {
         public static string HashOtp(string otp)
         {

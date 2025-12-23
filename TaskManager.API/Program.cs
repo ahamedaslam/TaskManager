@@ -114,6 +114,9 @@ builder.Services.AddScoped<CurrentUserService>();
 //register http client 
 builder.Services.AddHttpClient();
 
+//Redis Service
+builder.Services.AddScoped<RedisService>();
+
 // Repository Services
 builder.Services.AddScoped<ITokenRepository, TokenRepository>();
 builder.Services.AddScoped<ITaskManagerRepo, TaskManagerRepository>();
@@ -146,20 +149,31 @@ builder.Services.Configure<IdentityOptions>(options =>
 });
 #endregion
 
-#region ================== JWT Authentication Config==================
+#region ================== JWT Bearer Authentication Config ==================
 
+//It tells ASP.NET how to validate incoming JWTs (issuer, audience, lifetime, signing key, and role claim type).
+//it also customizes the 401 response body so clients get a JSON error instead of the default WWW-Authenticate header/html.
 builder.Services.AddAuthentication(options =>
 {
+    //Use JWT Bearer Handler for authentication.
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
     options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
 })
 .AddJwtBearer(options =>
 {
+    //Registers JwtBearerHandler.
     options.TokenValidationParameters = new TokenValidationParameters
     {
+//1.  User logs in (POST /api/auth/login) with username/password.
+//2.  Server validates credentials and issues a JWT that includes issuer, audience, expiry, and a role claim.
+//3.  Client calls a protected endpoint (e.g., GET /api/tasks) and sets Authorization: Bearer<token>.
+//4.  JwtBearer middleware validates the token using the configured TokenValidationParameters.If valid, request proceeds; if not, the custom OnChallenge returns a JSON 401 payload.
+
         RoleClaimType = "http://schemas.microsoft.com/ws/2008/06/identity/claims/role",
+        //ClaimsPrincipal is the authenticated user
+        //it contains userdi, username, roles, and other claims from the JWT.
         AuthenticationType = "Jwt",
-        ValidateIssuer = true,
+        ValidateIssuer = true, //Compares iss claim with JWT_ISSUER
         ValidateAudience = true,
         ValidateLifetime = true,
         ValidateIssuerSigningKey = true,
@@ -242,13 +256,15 @@ app.UseStatusCodePages(async context =>
 
 #region ================== Request Middleware Pipeline ==================
 
+//Registers Authentication Middleware
+
+//middleware order matters
 app.UseCors("AllowClientFrom");
 app.UseAuthentication(); // Validates JWT
-app.UseAuthorization();  // Applies role policies, [Authorize]
+app.UseAuthorization();  // Reads [Authorize] attributes //Evaluates: Is user authenticated? Does user have required roles/claims?
 app.MapControllers();// Maps controller routes
 app.Run();// Run the application
 
-// Optional: Remove all default logging providers
 #endregion
 
 

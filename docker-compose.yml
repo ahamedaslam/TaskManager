@@ -1,0 +1,76 @@
+version: "3.9"
+
+services:
+  db:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: taskmanager-db
+    environment:
+      ACCEPT_EULA: "Y"
+      SA_PASSWORD: ${SA_PASSWORD}
+    ports:
+      - "1433:1433"   # Expose ONLY for local dev
+    volumes:
+      - db_data:/var/opt/mssql
+    networks:
+      - taskmanager-network
+    healthcheck:
+      test: [
+        "CMD-SHELL",
+        "/opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P \"$SA_PASSWORD\" -Q \"SELECT 1\""
+      ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7.0
+    container_name: taskmanager-redis
+    ports:
+      - "6379:6379"
+    networks:
+      - taskmanager-network
+
+  app:
+    build: .
+    container_name: taskmanager-api
+    environment:
+      ASPNETCORE_ENVIRONMENT: "Production"
+      DOTNET_RUNNING_IN_CONTAINER: "true"
+
+      DB_CONNECTION_STRING: ${DB_CONNECTION_STRING}
+
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_ISSUER: ${JWT_ISSUER}
+      JWT_AUDIENCE: ${JWT_AUDIENCE}
+      JWT_REFRESH_TOKEN_EXPIRY_DAYS: ${JWT_REFRESH_TOKEN_EXPIRY_DAYS}
+      JWT_ACCESS_TOKEN_EXPIRY_MINUTES: ${JWT_ACCESS_TOKEN_EXPIRY_MINUTES}
+
+      OTP_EXPIRY_MINUTES: ${OTP_EXPIRY_MINUTES}
+
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+
+      EMAIL_SENDER: ${EMAIL_SENDER_NAME}
+      EMAIL_FROM: ${EMAIL_FROM}
+      EMAIL_SMTP: ${EMAIL_SMTP}
+      EMAIL_PORT: ${EMAIL_PORT}
+      EMAIL_USERNAME: ${EMAIL_USERNAME}
+      EMAIL_PASSWORD: ${EMAIL_PASSWORD}
+
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+    ports:
+      - "8080:8080"
+    networks:
+      - taskmanager-network
+
+volumes:
+  db_data:
+
+networks:
+  taskmanager-network:
+    driver: bridge

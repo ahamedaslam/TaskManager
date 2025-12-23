@@ -10,13 +10,12 @@ namespace TaskManager.Models
         public int TokenId { get; set; }
 
         [Required]
-        public string Token { get; set; } = string.Empty;  //initializes the property to an empty string by default.
+        public string Token { get; set; }  //initializes the property to an empty string by default.
 
         [Required]
         public  DateTime Expires { get; set; }
 
-        public DateTime CreatedAt { get; set; } = DateTime.Now;
-
+        public DateTime CreatedAt { get; set; }
         public DateTime? Revoked { get; set; }
 
         //Navigation property to the ApplicationUser

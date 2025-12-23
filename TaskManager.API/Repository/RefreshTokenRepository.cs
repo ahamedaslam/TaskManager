@@ -27,12 +27,12 @@ namespace TaskManager.Repository
             {
                 Token = GenerateSecureToken(),
                 UserId = user.Id,
-                CreatedAt = DateTime.Now
+                CreatedAt = DateTime.UtcNow,
+                Expires = DateTime.UtcNow.AddDays(expiryDays)
             };
 
             _context.RefreshTokens.Add(refreshToken);
             await _context.SaveChangesAsync();
-
             return refreshToken;
         }
 
@@ -45,7 +45,7 @@ namespace TaskManager.Repository
 
         public async Task InvalidateAsync(RefreshToken token)
         {
-            token.Revoked = DateTime.Now;
+            token.Revoked = DateTime.UtcNow;
             _context.RefreshTokens.Update(token);
             await _context.SaveChangesAsync();
         }

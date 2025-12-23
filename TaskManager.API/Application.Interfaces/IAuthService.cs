@@ -11,6 +11,8 @@ namespace TaskManager.InterfaceService
         Task<Response> LoginUserAsync(LoginRequestDTO loginRequestDTO,string logId);
 
         Task<Response> VerifyOtpAsync(VerifyOtpRequestDTO dto, string logId);
+        Task<Response> LogoutAsync(string refreshToken,string logId);
+
 
     }
 }

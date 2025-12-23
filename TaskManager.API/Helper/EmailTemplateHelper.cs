@@ -2,11 +2,7 @@
 {
     public static class EmailTemplateHelper
     {
-        public static string OtpTemplate(
-            string userName,
-            string otp,
-            int expiryMinutes,
-            string appName)
+        public static string OtpTemplate(string userName, string otp,int expiryMinutes,string appName)
         {
             return $@"
 <!DOCTYPE html>

@@ -1,14 +1,10 @@
 ﻿using Microsoft.AspNetCore.Identity;
-using Microsoft.IdentityModel.Tokens;
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Text;
-using TaskManager.Helper;
 using TaskManager.Interface;
 using TaskManager.IRepository;
 using TaskManager.Models;
 using TaskManager.Models.Response;
 using TaskManager.Services.Interfaces;
+using TaskManager.Helper;
 
 namespace TaskManager.Services
 {
@@ -20,9 +16,10 @@ namespace TaskManager.Services
         private readonly IRefreshTokenRepository _refreshTokenRepository;
         private readonly IConfiguration _configuration;
         private readonly CurrentUserService _currentUserService;
+        private readonly RedisService _redisService;
 
 
-        public RefreshTokenService(ILogger<RefreshTokenService> logger,UserManager<ApplicationUser> userManager, ITokenRepository tokenRepository, IRefreshTokenRepository refreshTokenRepository, IConfiguration configuration, CurrentUserService currentUserService)
+        public RefreshTokenService(ILogger<RefreshTokenService> logger,UserManager<ApplicationUser> userManager, ITokenRepository tokenRepository, IRefreshTokenRepository refreshTokenRepository, IConfiguration configuration, CurrentUserService currentUserService, RedisService redisService)
         {
             _logger = logger;
             _userManager = userManager;
@@ -30,6 +27,7 @@ namespace TaskManager.Services
             _refreshTokenRepository = refreshTokenRepository;
             _configuration = configuration;
             _currentUserService = currentUserService;
+            _redisService = redisService;
         }
         public async Task<Response> GenerateTokensAsync(ApplicationUser user)
         {
@@ -61,11 +59,16 @@ namespace TaskManager.Services
         {
             try
             {
-                var principal = GetPrincipalFromExpiredToken(accessToken);
+                var principal = JwtTokenUtils.GetPrincipalFromExpiredToken(accessToken, _configuration);
+                // Even if access token is expired, still allow me to read claims from it.
                 if (principal == null)
                 {
                   return ResponseHelper.BadRequest("Invalid access token");
                 }
+                var storedUserId = await _redisService.GetRefreshTokenAsync(refreshToken);
+                if (storedUserId == null)
+                    return ResponseHelper.Unauthorized("Invalid refresh token");
+
 
                 var userId = _currentUserService.GetUserId;
                 if (string.IsNullOrEmpty(userId))
@@ -95,43 +98,5 @@ namespace TaskManager.Services
                 throw;
             }
         }
-
-
-        private ClaimsPrincipal? GetPrincipalFromExpiredToken(string token)
-        {
-            var tokenValidationParameters = new TokenValidationParameters
-            {
-                ValidateIssuer = true,
-                ValidateAudience = true,
-                ValidateIssuerSigningKey = true,
-                ValidateLifetime = false, // <-- This allows expired tokens to be validated Even if access token is expired,
-                                          // still allow me to read claims from it.
-                ValidIssuer = _configuration["Jwt_Issuer"],
-                ValidAudience = _configuration["Jwt_Audience"],
-                IssuerSigningKey = new SymmetricSecurityKey(
-                    Encoding.UTF8.GetBytes(_configuration["Jwt_Secret"]!)
-                )
-            };
-           // _logger.LogInformation("Loaded Secret: {secret}", _configuration["Jwt:Secret"]);
-
-            var tokenHandler = new JwtSecurityTokenHandler();
-            try
-            {
-                var principal = tokenHandler.ValidateToken(token, tokenValidationParameters, out SecurityToken validatedToken);
-
-                if (validatedToken is not JwtSecurityToken jwtToken ||
-                    !jwtToken.Header.Alg.Equals(SecurityAlgorithms.HmacSha256, StringComparison.InvariantCultureIgnoreCase))
-                {
-                    return null;
-                }
-
-                return principal;
-            }
-            catch
-            {
-                return null;
-            }
-        }
-
     }
 }
