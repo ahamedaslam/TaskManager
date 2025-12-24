@@ -11,28 +11,17 @@ The Task Manager API streamlines collaboration by allowing users to manage tasks
 
 ## 🛠 Technology Stack
 
-* 
-**Backend:** ASP.NET Core Web API (.NET 7/8) 
+* Backend:** ASP.NET Core Web API (.NET 7/8) 
 
+* Database:** SQL Server with Entity Framework Core 
 
-* 
-**Database:** SQL Server with Entity Framework Core 
+* Frontend:** Angular 
 
+* Security:** JWT Authentication, ASP.NET Identity, and OTP Verification 
 
-* 
-**Frontend:** Angular 
+* Logging:** Serilog with structured logging 
 
-
-* 
-**Security:** JWT Authentication, ASP.NET Identity, and OTP Verification 
-
-
-* 
-**Logging:** Serilog with structured logging 
-
-
-* 
-**Documentation:** Swagger / OpenAPI 
+* Documentation:** Swagger / OpenAPI 
 
 
 
@@ -40,50 +29,31 @@ The Task Manager API streamlines collaboration by allowing users to manage tasks
 
 The project follows industry best practices to ensure a clean and modular codebase:
 
-* 
-**Layered Architecture:** Separate layers for Controllers, Services, Repositories, and Middleware.
+* Layered Architecture:** Separate layers for Controllers, Services, Repositories, and Middleware.
 
+* Repository & Service Patterns:** Decouples business logic from data persistence.
 
-* 
-**Repository & Service Patterns:** Decouples business logic from data persistence.
+* Multi-Tenancy:** A dedicated user-tenant linking system to scope data access.
 
-
-* 
-**Multi-Tenancy:** A dedicated user-tenant linking system to scope data access.
-
-
-* 
-**Middleware:** Custom implementation for global exception handling and JWT processing.
+* Middleware:** Custom implementation for global exception handling and JWT processing.
 
 
 
 ## ✨ Key Features
 
-* 
-**Multi-Tenant Isolation:** Data is strictly separated between tenants.
+* Multi-Tenant Isolation:** Data is strictly separated between tenants.
 
+* Role-Based Access Control (RBAC):
+  
+* Admin:** Full task management capabilities.
 
-* **Role-Based Access Control (RBAC):**
-* 
-**Admin:** Full task management capabilities.
+* Normal User:** Restricted to viewing and updating their own tasks.
 
+* Advanced Task Management:** Support for CRUD operations, filtering, sorting, and pagination.
 
-* 
-**Normal User:** Restricted to viewing and updating their own tasks.
+* AI Chatbot:** An integrated assistant that answers task-related queries and provides summaries while respecting tenant permissions.
 
-
-
-
-* 
-**Advanced Task Management:** Support for CRUD operations, filtering, sorting, and pagination.
-
-
-* 
-**AI Chatbot:** An integrated assistant that answers task-related queries and provides summaries while respecting tenant permissions.
-
-
-* 
-**Structured Logging:** Every log entry includes a unique `logId` for easier debugging.
+* Structured Logging:** Every log entry includes a unique `logId` for easier debugging.
 
 
 
@@ -117,11 +87,3 @@ The solution is organized into logical components to ensure scalability:
 * **Models/DTOs:** Data structures and transfer objects.
 * 
 **Helpers:** Standardized response utilities (`ResponseHelper.cs`).
-
-
-
----
-
----
-
-**Would you like me to add a "Installation & Setup" section with specific commands for .NET and SQL Server?**
