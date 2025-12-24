@@ -62,13 +62,13 @@ The project follows industry best practices to ensure a clean and modular codeba
 | Method | Endpoint | Description |
 | --- | --- | --- |
 | `POST` | `/api/login` | Authenticate and receive JWT.
-
+| --- | --- | --- |
 | `POST` | `/api/Tenant` | Register a new tenant.
-
+| --- | --- | --- |
 | `GET` | `/api/taskmanager` | Get tasks (filtered/paged).
-
+| --- | --- | --- |
 | `POST` | `/api/taskmanager` | Create a new task.
-
+| --- | --- | --- |
 | `PATCH` | `/api/taskmanager/completion-status` | Toggle task status.
 
 
