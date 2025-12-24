@@ -75,7 +75,6 @@ The project follows industry best practices to ensure a clean and modular codeba
  |
 | `PATCH` | `/api/taskmanager/completion-status` | Toggle task status.
 
- |
 
 ## 📂 Project Structure
 
