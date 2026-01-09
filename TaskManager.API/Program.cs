@@ -132,9 +132,15 @@ builder.Services.AddHttpContextAccessor();
 
 //var dbProvider = builder.Configuration["DatabaseProvider"];
 
+var env = builder.Environment.EnvironmentName;
+
+string conn = env == "Development"? Environment.GetEnvironmentVariable("DB_LOCAL"): Environment.GetEnvironmentVariable("DB_PROD");
+
+if (string.IsNullOrWhiteSpace(conn))
+    throw new Exception("Database connection string missing!");
+
 builder.Services.AddDbContext<AuthDBContext>(options =>
-    options.UseSqlServer(builder.Configuration["DB_CONNECTION_STRINGS"]
-    ));
+    options.UseSqlServer(conn));
 
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>()
     .AddEntityFrameworkStores<AuthDBContext>()
