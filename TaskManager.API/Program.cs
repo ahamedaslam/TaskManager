@@ -36,7 +36,10 @@ builder.Logging.ClearProviders();
 #endregion
 
 #region ================== Env Variables Config ==================
-DotNetEnv.Env.Load(); // Loads values from .env
+if (builder.Environment.IsDevelopment())
+{
+    DotNetEnv.Env.Load();
+}
 builder.Configuration.AddEnvironmentVariables();
 
 #endregion
