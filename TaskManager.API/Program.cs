@@ -130,8 +130,10 @@ builder.Services.AddHttpContextAccessor();
 
 #region ================== DBContext & Identity ==================
 
+//var dbProvider = builder.Configuration["DatabaseProvider"];
+
 builder.Services.AddDbContext<AuthDBContext>(options =>
-    options.UseSqlServer(builder.Configuration["DB_CONNECTION_STRING"]
+    options.UseSqlServer(builder.Configuration["DB_CONNECTION_STRINGS"]
     ));
 
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>()
@@ -171,7 +173,7 @@ builder.Services.AddAuthentication(options =>
 
         RoleClaimType = "http://schemas.microsoft.com/ws/2008/06/identity/claims/role",
         //ClaimsPrincipal is the authenticated user
-        //it contains userdi, username, roles, and other claims from the JWT.
+        //it contains userdi, username, roles, and other claims from the JWT. 
         AuthenticationType = "Jwt",
         ValidateIssuer = true, //Compares iss claim with JWT_ISSUER
         ValidateAudience = true,
@@ -266,6 +268,10 @@ app.MapControllers();// Maps controller routes
 app.Run();// Run the application
 
 #endregion
+
+
+
+
 
 
 

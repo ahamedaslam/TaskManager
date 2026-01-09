@@ -1,3 +1,5 @@
+version: '3.9'
+
 services:
   db:
     image: mcr.microsoft.com/mssql/server:2022-latest
@@ -11,15 +13,6 @@ services:
       - db_data:/var/opt/mssql
     networks:
       - taskmanager-network
-    healthcheck:
-      test: [
-        "CMD-SHELL",
-        "/opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P \"$SA_PASSWORD\" -Q \"SELECT 1\""
-      ]
-      interval: 10s
-      timeout: 5s
-      retries: 10
-
   redis:
     image: redis:7.0
     container_name: taskmanager-redis

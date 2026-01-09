@@ -1,5 +1,4 @@
-﻿using AutoMapper;
-using TaskManager.DTOs.TaskManager;
+﻿using TaskManager.DTOs.TaskManager;
 using TaskManager.Helper;
 using TaskManager.IRepository;
 using TaskManager.Models;

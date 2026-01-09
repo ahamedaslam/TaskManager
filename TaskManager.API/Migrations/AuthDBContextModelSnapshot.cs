@@ -8,7 +8,7 @@ using TaskManager.DBContext;
 
 #nullable disable
 
-namespace TaskManager.Migrations
+namespace TaskManager.MultiTenant.Migrations
 {
     [DbContext(typeof(AuthDBContext))]
     partial class AuthDBContextModelSnapshot : ModelSnapshot
@@ -324,7 +324,7 @@ namespace TaskManager.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<DateTime>("DueTime")
+                    b.Property<DateTime?>("DueTime")
                         .HasColumnType("datetime2");
 
                     b.Property<bool>("IsCompleted")
