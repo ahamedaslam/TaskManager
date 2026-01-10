@@ -20,10 +20,20 @@ using TaskManager.Services.Interfaces;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.WebHost.ConfigureKestrel(serverOptions =>
+{
+    var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
+    serverOptions.ListenAnyIP(int.Parse(port));
+});
+
+
 //Request–Response Pipeline
 //Request → Middleware → Controller
 //Response ← Middleware ← Controller
 //Order matters — middleware executes in the sequence it’s registered.
+
+
+
 
 #region ================== Serilog Configuration ==================
 Log.Logger = new LoggerConfiguration()
