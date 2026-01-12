@@ -1,0 +1,6 @@
+﻿namespace TaskManager.MultiTenant
+{
+    public class logs
+    {
+    }
+}
