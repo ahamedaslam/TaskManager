@@ -1,4 +1,4 @@
-
+<img width="1536" height="1024" alt="ad33a615-62a1-4ba7-a906-6f65f83acf7d" src="https://github.com/user-attachments/assets/2bbbb208-60c0-4365-8c36-7e3364e3677d" />
 ---
 
 # Task Manager - Tenant API
@@ -78,3 +78,21 @@ The solution is organized into logical components to ensure scalability:
 * **Models/DTOs:** Data structures and transfer objects.
 * 
 **Helpers:** Standardized response utilities (`ResponseHelper.cs`).
+
+
+  ## 🧱 System Architecture
+
+![Task Manager Architecture](docs/images/architecture.png)
+
+This architecture illustrates how the system securely processes multi-tenant requests using IIS, Kestrel, and Azure SQL.
+
+### Request Flow
+
+1. Angular frontend sends API requests over HTTPS  
+2. Azure IIS receives the request and handles SSL & routing  
+3. Kestrel (.NET runtime) executes controllers, middleware, and services  
+4. API securely communicates with Azure SQL Database  
+5. Data is returned with tenant isolation and role-based authorization  
+
+This layered cloud architecture ensures scalability, performance, and enterprise-grade security.
+
