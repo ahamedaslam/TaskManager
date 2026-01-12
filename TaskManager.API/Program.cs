@@ -146,13 +146,17 @@ builder.Services.AddHttpContextAccessor();
 #endregion
 
 #region ================== DBContext & Identity ==================
-var env = builder.Environment.EnvironmentName;
 
-string conn = env == "Development" ? Environment.GetEnvironmentVariable("DB_LOCAL") : Environment.GetEnvironmentVariable("DB_PROD");
+var conn = Environment.GetEnvironmentVariable("DB_PROD") ?? Environment.GetEnvironmentVariable("DB_LOCAL");
 
 if (string.IsNullOrWhiteSpace(conn))
-    throw new Exception("Database connection string missing!");
-
+{
+    Console.WriteLine("DB connection string not found.");
+}
+else
+{
+    Console.WriteLine("DB connection loaded.");
+}
 
 builder.Services.AddDbContext<AuthDBContext>(options =>
     options.UseSqlServer(conn));
