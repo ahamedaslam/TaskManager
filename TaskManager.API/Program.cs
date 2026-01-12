@@ -284,12 +284,16 @@ app.UseStatusCodePages(async context =>
 #region ================== Request Middleware Pipeline ==================
 
 //Registers Authentication Middleware
-
+app.UseRouting();
 //middleware order matters
 app.UseCors("AllowClientFrom");
 app.UseAuthentication(); // Validates JWT
 app.UseAuthorization();  // Reads [Authorize] attributes //Evaluates: Is user authenticated? Does user have required roles/claims?
+
+app.UseStaticFiles();
+
 app.MapControllers();// Maps controller routes
+
 app.Run();// Run the application
 
 #endregion
