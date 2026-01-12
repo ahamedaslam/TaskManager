@@ -1,6 +1,3 @@
-<img width="1536" height="1024" alt="ad33a615-62a1-4ba7-a906-6f65f83acf7d" src="https://github.com/user-attachments/assets/2bbbb208-60c0-4365-8c36-7e3364e3677d" />
----
-
 # Task Manager - Tenant API
 
 A scalable and secure **multi-tenant task management system** built with **ASP.NET Core**. This project is designed to handle multiple organizations (tenants) while ensuring strict data isolation and role-based security.
@@ -82,7 +79,8 @@ The solution is organized into logical components to ensure scalability:
 
   ## 🧱 System Architecture
 
-![Task Manager Architecture](docs/images/architecture.png)
+<img width="1536" height="1024" alt="ad33a615-62a1-4ba7-a906-6f65f83acf7d" src="https://github.com/user-attachments/assets/2bbbb208-60c0-4365-8c36-7e3364e3677d" />
+---
 
 This architecture illustrates how the system securely processes multi-tenant requests using IIS, Kestrel, and Azure SQL.
 
