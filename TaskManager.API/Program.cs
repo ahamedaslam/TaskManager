@@ -20,11 +20,11 @@ using TaskManager.Services.Interfaces;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.WebHost.ConfigureKestrel(serverOptions =>
-{
-    var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
-    serverOptions.ListenAnyIP(int.Parse(port));
-});
+//builder.WebHost.ConfigureKestrel(serverOptions =>
+//{
+//    var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
+//    serverOptions.ListenAnyIP(int.Parse(port));
+//});
 
 
 //Request–Response Pipeline
@@ -146,12 +146,12 @@ builder.Services.AddHttpContextAccessor();
 #endregion
 
 #region ================== DBContext & Identity ==================
+var env = builder.Environment.EnvironmentName;
 
-//var dbProvider = builder.Configuration["DatabaseProvider"];
-string conn = builder.Configuration["DB_PROD"];
+string conn = env == "Development" ? Environment.GetEnvironmentVariable("DB_LOCAL") : Environment.GetEnvironmentVariable("DB_PROD");
 
 if (string.IsNullOrWhiteSpace(conn))
-    throw new Exception("DB_PROD is missing in App Service configuration!");
+    throw new Exception("Database connection string missing!");
 
 
 builder.Services.AddDbContext<AuthDBContext>(options =>
