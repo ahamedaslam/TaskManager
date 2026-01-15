@@ -5,17 +5,13 @@ on:
     branches:
       - master
 
-env:
-  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
-  DOTNET_CLI_TELEMETRY_OPTOUT: true
-
 concurrency:
   group: taskmanager-deploy
   cancel-in-progress: true
 
 jobs:
   deploy:
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
 
     steps:
     - uses: actions/checkout@v4
@@ -25,10 +21,10 @@ jobs:
       with:
         dotnet-version: '8.0.x'
 
-    - name: Restore API project only
+    - name: Restore API only
       run: dotnet restore "TaskManager API/TaskManager.MultiTenant.csproj"
 
-    - name: Publish API (net8 Linux)
+    - name: Publish API only (net8)
       run: dotnet publish "TaskManager API/TaskManager.MultiTenant.csproj" -c Release -f net8.0 -o publish --no-restore
 
     - name: Deploy to Azure Web App
