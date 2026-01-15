@@ -1,7 +1,7 @@
 ﻿// AuthService.cs
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using Serilog;
+//using Serilog;
 using System.Security.Cryptography;
 using TaskManager.DBContext;
 using TaskManager.DTOs.Auth;
