@@ -22,10 +22,10 @@ jobs:
         dotnet-version: '8.0.x'
 
     - name: Restore API only
-      run: dotnet restore "TaskManager API/TaskManager.MultiTenant.csproj"
+      run: dotnet restore TaskManager.API/TaskManager.MultiTenant.csproj
 
     - name: Publish API only (net8)
-      run: dotnet publish "TaskManager API/TaskManager.MultiTenant.csproj" -c Release -f net8.0 -o publish --no-restore
+      run: dotnet publish TaskManager.API/TaskManager.MultiTenant.csproj -c Release -f net8.0 -o publish --no-restore
 
     - name: Deploy to Azure Web App
       uses: azure/webapps-deploy@v3
