@@ -7,7 +7,7 @@ on:
 
 jobs:
   deploy:
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
 
     steps:
     - uses: actions/checkout@v4
@@ -20,9 +20,8 @@ jobs:
     - name: Restore
       run: dotnet restore
 
-    - name: Publish (self-contained, win-x64)
-      run:  dotnet publish -c Release -o publish 
-
+    - name: Publish (net8 Linux)
+      run: dotnet publish TaskManager.MultiTenant/TaskManager.MultiTenant.csproj -c Release -f net8.0 -o publish
 
     - name: Deploy to Azure Web App
       uses: azure/webapps-deploy@v3
