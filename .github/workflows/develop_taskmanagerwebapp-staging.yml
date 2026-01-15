@@ -17,8 +17,11 @@ jobs:
       with:
         dotnet-version: '8.0.x'
 
-    - name: Publish
-      run:  dotnet publish -c Release -o publish
+    - name: Restore
+      run: dotnet restore
+
+    - name: Publish (self-contained, win-x64)
+      run:  dotnet publish -c Release -o publish 
 
 
     - name: Deploy to Azure Web App

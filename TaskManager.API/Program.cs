@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
-using Serilog;
+//using Serilog;
 using System.Text;
 using System.Text.Json;
 using TaskManager.DBContext;
@@ -40,15 +40,15 @@ Console.WriteLine("=========== AZURE BOOT ==========");
 
 
 
-#region ================== Serilog Configuration ==================
-Log.Logger = new LoggerConfiguration()
-    .ReadFrom.Configuration(builder.Configuration) // Reads from appsettings.json
-    .Enrich.FromLogContext()
-    .CreateLogger();
+//#region ================== Serilog Configuration ==================
+////Log.Logger = new LoggerConfiguration()
+////    .ReadFrom.Configuration(builder.Configuration) // Reads from appsettings.json
+////    .Enrich.FromLogContext()
+////    .CreateLogger();
 
-builder.Host.UseSerilog();
-builder.Logging.ClearProviders();
-#endregion
+////builder.Host.UseSerilog();
+////builder.Logging.ClearProviders();
+//#endregion
 
 #region ================== Env Variables Config ==================
 if (builder.Environment.IsDevelopment())
@@ -105,17 +105,17 @@ builder.Services.AddSwaggerGen(options =>
 
 #region ================== CONFIG REDIS ==================
 
-//var redisHost = builder.Configuration["REDIS_HOST"];
-//var redisPort = builder.Configuration["REDIS_PORT"];
+var redisHost = builder.Configuration["REDIS_HOST"];
+var redisPort = builder.Configuration["REDIS_PORT"];
 
-//if (!string.IsNullOrEmpty(redisHost))
-//{
-//    builder.Services.AddStackExchangeRedisCache(options =>
-//    {
-//        options.Configuration = $"{redisHost}:{redisPort}";
-//        options.InstanceName = "TaskManager_";
-//    });
-//}
+if (!string.IsNullOrEmpty(redisHost))
+{
+    builder.Services.AddStackExchangeRedisCache(options =>
+    {
+        options.Configuration = $"{redisHost}:{redisPort}";
+        options.InstanceName = "TaskManager_";
+    });
+}
 
 
 #endregion
