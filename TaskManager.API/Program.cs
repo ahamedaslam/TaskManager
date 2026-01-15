@@ -32,6 +32,11 @@ var builder = WebApplication.CreateBuilder(args);
 //Response ← Middleware ← Controller
 //Order matters — middleware executes in the sequence it’s registered.
 
+Console.WriteLine("=========== AZURE BOOT ==========");
+Console.WriteLine("DOTNET = " + Environment.Version);
+Console.WriteLine("FRAMEWORK = " + System.Runtime.InteropServices.RuntimeInformation.FrameworkDescription);
+Console.WriteLine("OS = " + System.Runtime.InteropServices.RuntimeInformation.OSDescription);
+Console.WriteLine("=========== AZURE BOOT ==========");
 
 
 
