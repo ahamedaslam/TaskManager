@@ -100,17 +100,17 @@ builder.Services.AddSwaggerGen(options =>
 
 #region ================== CONFIG REDIS ==================
 
-var redisHost = builder.Configuration["REDIS_HOST"];
-var redisPort = builder.Configuration["REDIS_PORT"];
+//var redisHost = builder.Configuration["REDIS_HOST"];
+//var redisPort = builder.Configuration["REDIS_PORT"];
 
-if (!string.IsNullOrEmpty(redisHost))
-{
-    builder.Services.AddStackExchangeRedisCache(options =>
-    {
-        options.Configuration = $"{redisHost}:{redisPort}";
-        options.InstanceName = "TaskManager_";
-    });
-}
+//if (!string.IsNullOrEmpty(redisHost))
+//{
+//    builder.Services.AddStackExchangeRedisCache(options =>
+//    {
+//        options.Configuration = $"{redisHost}:{redisPort}";
+//        options.InstanceName = "TaskManager_";
+//    });
+//}
 
 
 #endregion
