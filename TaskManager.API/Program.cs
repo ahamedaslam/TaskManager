@@ -20,12 +20,6 @@ using TaskManager.Services.Interfaces;
 
 var builder = WebApplication.CreateBuilder(args);
 
-//builder.WebHost.ConfigureKestrel(serverOptions =>
-//{
-//    var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
-//    serverOptions.ListenAnyIP(int.Parse(port));
-//});
-
 
 //Request–Response Pipeline
 //Request → Middleware → Controller
@@ -255,11 +249,9 @@ builder.Services.AddCors(options =>
 var app = builder.Build();
 
 // Use Swagger only in development
-if (app.Environment.IsDevelopment())
-{
     app.UseSwagger();
     app.UseSwaggerUI();
-}
+
 
 // Custom Global Exception Handler Middleware
 app.UseMiddleware<ExceptionHandleMiddleware>();
