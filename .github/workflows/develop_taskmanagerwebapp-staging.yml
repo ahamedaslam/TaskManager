@@ -1,35 +1,42 @@
-name: Deploy TaskManager API
-
+﻿name: Deploy TaskManager API
 on:
+  workflow_dispatch:
   push:
     branches:
       - master
+
+env:
+  AZURE_WEBAPP_NAME: taskmanager--api
+  AZURE_WEBAPP_PACKAGE_PATH: "./publish"
 
 concurrency:
   group: taskmanager-deploy
   cancel-in-progress: true
 
 jobs:
-  deploy:
+  publish:
     runs-on: windows-latest
 
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v4
-      with:
-        dotnet-version: '8.0.x'
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
 
-    - name: Restore API only
-      run: dotnet restore TaskManager.API/TaskManager.MultiTenant.csproj
+      - name: Restore
+        run: dotnet restore ./TaskManager.API/TaskManager.MultiTenant.csproj
 
-    - name: Publish API only (net8)
-      run: dotnet publish TaskManager.API/TaskManager.MultiTenant.csproj -c Release -f net8.0 -o publish --no-restore
+      - name: Build
+        run: dotnet build ./TaskManager.API/TaskManager.MultiTenant.csproj --configuration Release --no-restore
 
-    - name: Deploy to Azure Web App
-      uses: azure/webapps-deploy@v3
-      with:
-        app-name: taskmanager--api
-        publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
-        package: publish
+      - name: Publish
+        run: dotnet publish ./TaskManager.API/TaskManager.MultiTenant.csproj --configuration Release --no-build --output "${{ env.AZURE_WEBAPP_PACKAGE_PATH }}"
+
+      - name: Deploy to Azure Web App
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ env.AZURE_WEBAPP_NAME }}
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+          package: ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
