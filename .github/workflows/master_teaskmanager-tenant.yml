@@ -1,5 +1,4 @@
-
-name: Build and deploy ASP.Net Core app to Azure Web App - teaskmanager-tenant
+name: Build and deploy ASP.Net Core API to Azure Web App - teaskmanager-tenant
 
 on:
   push:
@@ -11,44 +10,44 @@ jobs:
   build:
     runs-on: ubuntu-latest
     permissions:
-      contents: read #This is required for actions/checkout
+      contents: read
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up .NET Core
+      - name: Set up .NET
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.x'
 
-      - name: Build with dotnet
-        run: dotnet build TaskManager.API/TaskManager.MultiTenant.csproj --configuration Releas
+      # Build + Publish ONLY API project
+      - name: Publish API
+        run: |
+          dotnet publish TaskManager.API/TaskManager.MultiTenant.csproj \
+            -c Release \
+            -o ${{ env.DOTNET_ROOT }}/myapp \
+            --no-self-contained
 
-      - name: dotnet publish
-        run: dotnet publish TaskManager.API/TaskManager.MultiTenant.csproj \
-             -c Release \
-             -o ${{ env.DOTNET_ROOT }}/myapp \
-             --no-self-contained
-     
-      - name: Upload artifact for deployment job
+      - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: .net-app
-          path: ${{env.DOTNET_ROOT}}/myapp
+          name: api-app
+          path: ${{ env.DOTNET_ROOT }}/myapp
 
   deploy:
     runs-on: ubuntu-latest
     needs: build
     permissions:
-      id-token: write #This is required for requesting the JWT
-      contents: read #This is required for actions/checkout
+      id-token: write
+      contents: read
 
     steps:
-      - name: Download artifact from build job
+      - name: Download artifact
         uses: actions/download-artifact@v4
         with:
-          name: .net-app
-      
+          name: api-app
+          path: app
+
       - name: Login to Azure
         uses: azure/login@v2
         with:
@@ -57,10 +56,8 @@ jobs:
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_2D4BAAFED3EE48F1A7C7519CBAF410B8 }}
 
       - name: Deploy to Azure Web App
-        id: deploy-to-webapp
         uses: azure/webapps-deploy@v3
         with:
-          app-name: 'teaskmanager-tenant'
-          slot-name: 'Production'
-          package: .
-          
+          app-name: teaskmanager-tenant
+          slot-name: Production
+          package: app
