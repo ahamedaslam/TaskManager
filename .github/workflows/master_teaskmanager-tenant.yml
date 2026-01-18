@@ -22,13 +22,8 @@ jobs:
 
       # Build + Publish ONLY API project
       - name: Publish API
-        run: |
-          dotnet publish TaskManager.API/TaskManager.MultiTenant.csproj \
-            -c Release \
-            -o ${{ env.DOTNET_ROOT }}/myapp \
-            --no-self-contained
-            /p:UseAppHost=false
-            /p:IsTransformWebConfigDisabled=true
+        run: dotnet publish TaskManager.API/TaskManager.MultiTenant.csproj -c Release -o ${{ env.DOTNET_ROOT }}/myapp --no-self-contained /p:UseAppHost=false /p:IsTransformWebConfigDisabled=true
+       
 
 
       - name: Upload artifact
