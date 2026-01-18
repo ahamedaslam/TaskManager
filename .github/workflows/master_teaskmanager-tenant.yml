@@ -27,6 +27,7 @@ jobs:
             -c Release \
             -o ${{ env.DOTNET_ROOT }}/myapp \
             --no-self-contained
+            /p:UseAppHost=false
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
