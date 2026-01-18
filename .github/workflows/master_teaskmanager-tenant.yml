@@ -28,6 +28,8 @@ jobs:
             -o ${{ env.DOTNET_ROOT }}/myapp \
             --no-self-contained
             /p:UseAppHost=false
+            /p:IsTransformWebConfigDisabled=true
+
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4

@@ -9,6 +9,8 @@
 		<SelfContained>true</SelfContained>
 		<RuntimeIdentifier>win-x64</RuntimeIdentifier>
 		<IsPublishable>false</IsPublishable>
+		<IsTransformWebConfigDisabled>true</IsTransformWebConfigDisabled>
+
 	</PropertyGroup>
 	
   <ItemGroup>
