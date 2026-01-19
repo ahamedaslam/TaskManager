@@ -34,7 +34,7 @@ jobs:
         run: dotnet publish TaskManager.API/TaskManager.MultiTenant.csproj --configuration Release --no-build --output ./myapp -r linux-x64 --self-contained false
       
       - name: Upload artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v3
         with:
           name: myapp
           path: ./myapp
