@@ -25,13 +25,8 @@ jobs:
           dotnet-version: '8.x'
 
       - name: Publish API
-        run: |
-          dotnet publish TaskManager.API/TaskManager.MultiTenant.csproj \
-            -c Release \
-            -o publish \
-            --no-self-contained \
-            -p:UseAppHost=false \
-            -p:IsTransformWebConfigDisabled=true
+        run: dotnet publish TaskManager.API/TaskManager.MultiTenant.csproj -c Release -o publish --no-self-contained
+
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
