@@ -32,16 +32,16 @@ jobs:
 
       - name: Publish
         working-directory: TaskManager.API
-        run: dotnet publish TaskManager.MultiTenant.csproj -c Release -o ../publish
+        run: dotnet publish TaskManager.MultiTenant.csproj -c Release
 
       - name: Verify publish
-        run: ls -la publish
+        run: ls -la TaskManager.API/bin/Release/net8.0/publish
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: api-app
-          path: publish
+          path: TaskManager.API/bin/Release/net8.0/publish
 
   deploy:
     runs-on: ubuntu-latest
