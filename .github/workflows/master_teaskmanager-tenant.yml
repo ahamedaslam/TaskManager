@@ -22,19 +22,19 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '8.0.x'
-      
-      - name: Restore dependencies
-        run: dotnet restore TaskManager.API/TaskManager.MultiTenant.csproj
-      
-      - name: Build
-        run: dotnet build TaskManager.API/TaskManager.MultiTenant.csproj --configuration Release --no-restore
-      
-      - name: Publish
-        run: dotnet publish TaskManager.API/TaskManager.MultiTenant.csproj --configuration Release --no-build --output ./myapp -r linux-x64 --self-contained false
-      
+          dotnet-version: '8.x'
+
+      - name: Publish API
+        run: |
+          dotnet publish TaskManager.API/TaskManager.MultiTenant.csproj \
+            -c Release \
+            -o publish \
+            --no-self-contained \
+            -p:UseAppHost=false \
+            -p:IsTransformWebConfigDisabled=true
+
       - name: Upload artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: myapp
           path: ./myapp
