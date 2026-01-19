@@ -249,8 +249,11 @@ builder.Services.AddCors(options =>
 var app = builder.Build();
 
 // Use Swagger only in development
+if (app.Environment.IsDevelopment())
+{
     app.UseSwagger();
     app.UseSwaggerUI();
+}
 
 
 // Custom Global Exception Handler Middleware
