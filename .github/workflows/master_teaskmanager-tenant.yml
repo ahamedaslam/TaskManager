@@ -1,4 +1,4 @@
-name: Build and deploy ASP.Net Core API to Azure Web App - teaskmanager-tenant
+name: CI/CD - TaskManager API
 
 on:
   push:
@@ -6,45 +6,66 @@ on:
       - master
   workflow_dispatch:
 
+permissions:
+  contents: read
+  actions: read
+
 jobs:
   build:
+    name: Build
     runs-on: ubuntu-latest
+    
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
       
-      - name: Setup .NET
+      - name: Setup .NET 8.0
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0.x'
       
-      - name: Build and Publish
-        run: dotnet publish TaskManager.API/TaskManager.MultiTenant.csproj -c Release -o ${{github.workspace}}/publish -r linux-x64 --self-contained false
+      - name: Restore dependencies
+        run: dotnet restore TaskManager.API/TaskManager.MultiTenant.csproj
       
-      - name: Upload artifact for deployment job
+      - name: Build
+        run: dotnet build TaskManager.API/TaskManager.MultiTenant.csproj --configuration Release --no-restore
+      
+      - name: Publish
+        run: dotnet publish TaskManager.API/TaskManager.MultiTenant.csproj --configuration Release --no-build --output ./publish -r linux-x64 --self-contained false
+      
+      - name: List published files (debug)
+        run: ls -la ./publish
+      
+      - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: dotnet-app
-          path: ${{github.workspace}}/publish
+          name: webapp
+          path: ./publish
+          if-no-files-found: error
+          retention-days: 1
 
   deploy:
+    name: Deploy
     runs-on: ubuntu-latest
     needs: build
     environment:
-      name: 'Production'
-      url: ${{ steps.deploy-to-webapp.outputs.webapp-url }}
+      name: Production
+      url: ${{ steps.deploy.outputs.webapp-url }}
     
     steps:
-      - name: Download artifact from build job
+      - name: Download artifact
         uses: actions/download-artifact@v4
         with:
-          name: dotnet-app
-          path: ./app
+          name: webapp
+      
+      - name: List downloaded files (debug)
+        run: ls -la
       
       - name: Deploy to Azure Web App
-        id: deploy-to-webapp
+        id: deploy
         uses: azure/webapps-deploy@v3
         with:
-          app-name: 'teaskmanager-tenant'
-          slot-name: 'Production'
+          app-name: teaskmanager-tenant
+          slot-name: Production
           publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
-          package: ./app
+          package: .
