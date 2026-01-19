@@ -15,23 +15,26 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0.x'
-      
-      - name: Restore dependencies
+
+      - name: Restore
         run: dotnet restore TaskManager.API/TaskManager.MultiTenant.csproj
-      
+
       - name: Build
-        run: dotnet build TaskManager.API/TaskManager.MultiTenant.csproj --configuration Release --no-restore
-      
+        run: dotnet build TaskManager.API/TaskManager.MultiTenant.csproj -c Release --no-restore
+
       - name: Publish
-        run: dotnet publish TaskManager.API/TaskManager.MultiTenant.csproj --configuration Release --no-build --output ./myapp -r linux-x64 --self-contained false
-      
+        run: dotnet publish TaskManager.API/TaskManager.MultiTenant.csproj \
+             -c Release \
+             --no-build \
+             -o publish \
+             -r linux-x64 \
+             --self-contained false
+
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: api-app
           path: publish
-
-
 
   deploy:
     runs-on: ubuntu-latest
