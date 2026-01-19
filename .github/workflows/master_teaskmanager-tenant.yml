@@ -19,10 +19,13 @@ jobs:
       - name: Restore
         run: dotnet restore TaskManager.API/TaskManager.MultiTenant.csproj
 
+      - name: Build
+        run: dotnet build TaskManager.API/TaskManager.MultiTenant.csproj -c Release --no-restore
+
       - name: Publish
         run: dotnet publish TaskManager.API/TaskManager.MultiTenant.csproj -c Release -o publish
 
-      - name: Verify publish output
+      - name: Verify publish
         run: ls -la publish
 
       - name: Upload artifact
