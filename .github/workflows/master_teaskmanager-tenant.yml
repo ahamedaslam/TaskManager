@@ -22,16 +22,13 @@ jobs:
         with:
           dotnet-version: '8.x'
 
-      - name: Show TargetFramework
-        run: cat TaskManager.API/TaskManager.MultiTenant.csproj | grep TargetFramework
-
       - name: Restore
         working-directory: TaskManager.API
         run: dotnet restore TaskManager.MultiTenant.csproj
 
       - name: Build
         working-directory: TaskManager.API
-        run: dotnet build TaskManager.MultiTenant.csproj -c Release --no-restore
+        run: dotnet publish TaskManager.MultiTenant.csproj -c Release -o ../publish --no-restore
 
       - name: Publish
         working-directory: TaskManager.API
