@@ -28,11 +28,13 @@ jobs:
 
       - name: Build
         working-directory: TaskManager.API
-        run: dotnet publish TaskManager.MultiTenant.csproj -c Release -o ../publish --no-restore
+        run: dotnet build TaskManager.MultiTenant.csproj -c Release --no-restore
+
 
       - name: Publish
         working-directory: TaskManager.API
-        run: dotnet publish TaskManager.MultiTenant.csproj -c Release
+        run: dotnet publish TaskManager.MultiTenant.csproj -c Release -o ../publish --no-restore
+
 
       - name: Verify publish
         run: ls -la TaskManager.API/bin/Release/net8.0/publish
