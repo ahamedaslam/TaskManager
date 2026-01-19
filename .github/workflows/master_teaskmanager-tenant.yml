@@ -25,11 +25,19 @@ jobs:
             -p:UseAppHost=false \
             -p:IsTransformWebConfigDisabled=true
 
+      - name: Debug publish output
+        run: |
+            echo "Contents of publish folder:"
+            ls -la publish
+
+
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: api-app
-          path: publish
+          path: publish/*
+
+
 
   deploy:
     runs-on: ubuntu-latest
