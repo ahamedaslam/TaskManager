@@ -37,7 +37,7 @@ jobs:
 
 
       - name: Verify publish
-        run: ls -la TaskManager.API/bin/Release/net8.0/publish
+        run: ls -la publish
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
