@@ -22,6 +22,9 @@ jobs:
         with:
           dotnet-version: '8.x'
 
+      - name: Show TargetFramework
+        run: cat TaskManager.API/TaskManager.MultiTenant.csproj | grep TargetFramework
+
       - name: Restore
         working-directory: TaskManager.API
         run: dotnet restore TaskManager.MultiTenant.csproj
