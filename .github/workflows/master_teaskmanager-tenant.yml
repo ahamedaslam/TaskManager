@@ -17,13 +17,16 @@ jobs:
           dotnet-version: '8.x'
 
       - name: Restore
-        run: dotnet restore TaskManager.API/TaskManager.MultiTenant.csproj
+        working-directory: TaskManager.API
+        run: dotnet restore TaskManager.MultiTenant.csproj
 
       - name: Build
-        run: dotnet build TaskManager.API/TaskManager.MultiTenant.csproj -c Release --no-restore
+        working-directory: TaskManager.API
+        run: dotnet build TaskManager.MultiTenant.csproj -c Release --no-restore
 
       - name: Publish
-        run: dotnet publish TaskManager.API/TaskManager.MultiTenant.csproj -c Release -o publish
+        working-directory: TaskManager.API
+        run: dotnet publish TaskManager.MultiTenant.csproj -c Release -o ../publish
 
       - name: Verify publish
         run: ls -la publish
