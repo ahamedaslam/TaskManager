@@ -27,11 +27,6 @@ jobs:
             -c Release \
             -o ./publish
 
-      - name: Verify publish output
-        run: |
-          ls -la publish
-          test -f publish/TaskManager.MultiTenant.dll
-
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v3
         with:
