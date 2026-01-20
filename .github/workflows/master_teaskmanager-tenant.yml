@@ -6,30 +6,35 @@ on:
       - master
 
 env:
-  AZURE_WEBAPP_NAME: teaskmanager-tenant
-  DOTNET_VERSION: '8.0.x'
+  AZURE_WEBAPP_NAME: 'teaskmanager-tenant'    # Set this to your application's name
+  AZURE_WEBAPP_PACKAGE_PATH: '.'      # Set this to the path to your web app project, defaults to the repository root
+  DOTNET_VERSION: '8.0.x'           # Set this to the dot net version to use
 
 jobs:
-  build-and-deploy:
+  build:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v4
+      # Check out the repo
+      - uses: actions/checkout@main
+      
+      # Setup .NET Core SDK
+      - name: Setup .NET Core
+        uses: actions/setup-dotnet@v3
         with:
-          dotnet-version: ${{ env.DOTNET_VERSION }}
-
-      - name: Publish API
+          dotnet-version: ${{ env.DOTNET_VERSION }} 
+      
+      # Run dotnet build and publish
+      - name: dotnet build and publish
         run: |
-          dotnet publish TaskManager.API/TaskManager.MultiTenant.csproj \
-            -c Release \
-            -o ./publish
-
-      - name: Deploy to Azure Web App
+          dotnet restore
+          dotnet build --configuration Release
+          dotnet publish -c Release --property:PublishDir=${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
+          
+      # Deploy to Azure Web apps
+      - name: 'Run Azure webapp deploy action using publish profile credentials'
         uses: azure/webapps-deploy@v3
-        with:
-          app-name: ${{ env.AZURE_WEBAPP_NAME }}
-          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
-          package: ./publish
+        with: 
+          app-name: ${{ env.AZURE_WEBAPP_NAME }} # Replace with your app name
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE  }} # Define secret variable in repository settings as per action documentation
+          package: ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
