@@ -249,15 +249,12 @@ builder.Services.AddCors(options =>
 var app = builder.Build();
 
 // Use Swagger only in development
-if (app.Environment.IsDevelopment())
+app.UseSwagger();
+app.UseSwaggerUI(c =>
 {
-    app.UseSwagger();
-    app.UseSwaggerUI(c =>
-    {
-        c.SwaggerEndpoint("/swagger/v1/swagger.json", "TaskManager API v1");
-        c.RoutePrefix = "swagger"; // /swagger
-    });
-}
+    c.SwaggerEndpoint("/swagger/v1/swagger.json", "TaskManager API v1");
+    c.RoutePrefix = "swagger"; // /swagger
+});
 
 
 // Custom Global Exception Handler Middleware
