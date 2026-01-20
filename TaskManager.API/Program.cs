@@ -26,11 +26,11 @@ var builder = WebApplication.CreateBuilder(args);
 //Response ← Middleware ← Controller
 //Order matters — middleware executes in the sequence it’s registered.
 
-Console.WriteLine("=========== AZURE BOOT ==========");
-Console.WriteLine("DOTNET = " + Environment.Version);
-Console.WriteLine("FRAMEWORK = " + System.Runtime.InteropServices.RuntimeInformation.FrameworkDescription);
-Console.WriteLine("OS = " + System.Runtime.InteropServices.RuntimeInformation.OSDescription);
-Console.WriteLine("=========== AZURE BOOT ==========");
+//Console.WriteLine("=========== AZURE BOOT ==========");
+//Console.WriteLine("DOTNET = " + Environment.Version);
+//Console.WriteLine("FRAMEWORK = " + System.Runtime.InteropServices.RuntimeInformation.FrameworkDescription);
+//Console.WriteLine("OS = " + System.Runtime.InteropServices.RuntimeInformation.OSDescription);
+//Console.WriteLine("=========== AZURE BOOT ==========");
 
 
 
@@ -252,7 +252,11 @@ var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
-    app.UseSwaggerUI();
+    app.UseSwaggerUI(c =>
+    {
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "TaskManager API v1");
+        c.RoutePrefix = "swagger"; // /swagger
+    });
 }
 
 
